@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { calculateInvoice, type InvoiceInput } from '../calc/totals';
+import { calculateInvoice, type InvoiceCalcInput } from '../calc/totals';
 import type { InvoiceDocument } from './document';
+import { invoiceEmailText } from './email';
 import { renderInvoiceBody, renderInvoiceHtml } from './template';
 
 function makeDocument(overrides: Partial<InvoiceDocument> = {}): InvoiceDocument {
@@ -25,7 +26,7 @@ function makeDocument(overrides: Partial<InvoiceDocument> = {}): InvoiceDocument
   const discounts = [{ label: 'Partner discount', type: 'FLAT' as const, value: 2000 }];
   const advances = [{ label: 'Advance received', amount: 10000 }];
   const gstEnabled = overrides.gstEnabled ?? false;
-  const input: InvoiceInput = {
+  const input: InvoiceCalcInput = {
     items: overrides.items ?? items,
     discounts: overrides.discounts ?? discounts,
     tax: { enabled: gstEnabled, type: overrides.gstType, rate: overrides.gstRate },
@@ -230,6 +231,22 @@ describe('renderInvoiceBody', () => {
       expect(withUrl('javascript:alert(1)')).not.toContain('<img');
       expect(withUrl('https://example.com/sign.png')).toContain('<img');
     });
+  });
+});
+
+describe('invoiceEmailText', () => {
+  it('gives the invoice number, amounts and due date', () => {
+    const text = invoiceEmailText(makeDocument());
+    expect(text).toContain('Subject: Invoice AAT/INV/2026-27/001 · Website');
+    expect(text).toContain('Dear Priya,');
+    expect(text).toContain('Invoice total: ₹ 26,000.00');
+    expect(text).toContain('Balance due: ₹ 16,000.00');
+    expect(text).toContain('Due date: 06 Nov 2026');
+  });
+
+  it('greets the client when there is no contact person', () => {
+    const client = { ...makeDocument().client, contactPerson: null };
+    expect(invoiceEmailText(makeDocument({ client }))).toContain('Dear Agamathi Educationals,');
   });
 });
 

@@ -1,11 +1,15 @@
 import type {
+  CatalogItemRecord,
   ClientDetail,
   ClientPayload,
   ClientRecord,
   ClientSort,
   ClientSummary,
   ClientType,
+  InvoiceBuilderDefaults,
   InvoiceDocument,
+  InvoicePayload,
+  InvoiceRecord,
   InvoiceRow,
   MilestonePayload,
   MilestoneRecord,
@@ -59,6 +63,7 @@ export function useClient(id: string) {
   return useQuery({
     queryKey: ['clients', 'detail', id],
     queryFn: () => api<ClientDetail>(`/clients/${id}`),
+    enabled: Boolean(id),
   });
 }
 
@@ -99,6 +104,7 @@ export function useProject(id: string) {
   return useQuery({
     queryKey: ['projects', 'detail', id],
     queryFn: () => api<ProjectDetail>(`/projects/${id}`),
+    enabled: Boolean(id),
   });
 }
 
@@ -132,6 +138,72 @@ export function useInvoiceDocument(id: string) {
   return useQuery({
     queryKey: ['invoices', 'document', id],
     queryFn: () => api<InvoiceDocument>(`/invoices/${id}/document`),
+  });
+}
+
+export function useInvoice(id: string | undefined) {
+  return useQuery({
+    queryKey: ['invoices', 'record', id],
+    queryFn: () => api<InvoiceRecord>(`/invoices/${id}`),
+    enabled: Boolean(id),
+    staleTime: 0,
+    gcTime: 0,
+  });
+}
+
+export function useBuilderDefaults() {
+  return useQuery({
+    queryKey: ['invoices', 'builder-defaults'],
+    queryFn: () => api<InvoiceBuilderDefaults>('/invoices/builder-defaults'),
+  });
+}
+
+export function useNextInvoiceNo(date: string) {
+  return useQuery({
+    queryKey: ['invoices', 'next-number', date],
+    queryFn: () => api<{ invoiceNo: string }>(`/invoices/next-number?date=${date}`),
+    enabled: /^\d{4}-\d{2}-\d{2}$/.test(date),
+    placeholderData: keepPreviousData,
+  });
+}
+
+export function useCatalog() {
+  return useQuery({
+    queryKey: ['catalog'],
+    queryFn: () => api<CatalogItemRecord[]>('/catalog'),
+  });
+}
+
+/** Invoices feed the client and project totals, so a change refreshes those too. */
+function refreshInvoices(queryClient: QueryClient) {
+  queryClient.invalidateQueries({ queryKey: ['invoices'] });
+  refreshAll(queryClient);
+}
+
+export function useSaveInvoice(id?: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (input: InvoicePayload) =>
+      id
+        ? api<{ id: string }>(`/invoices/${id}`, send('PUT', input))
+        : api<{ id: string }>('/invoices', send('POST', input)),
+    onSuccess: () => refreshInvoices(queryClient),
+  });
+}
+
+export function useDuplicateInvoice() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => api<{ id: string }>(`/invoices/${id}/duplicate`, send('POST')),
+    onSuccess: () => refreshInvoices(queryClient),
+  });
+}
+
+export function useDeleteInvoice() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => api<void>(`/invoices/${id}`, send('DELETE')),
+    onSuccess: () => refreshInvoices(queryClient),
   });
 }
 

@@ -6,6 +6,7 @@ export * from './calc/words';
 export * from './clients';
 export * from './format';
 export * from './invoice/document';
+export * from './invoice/email';
 export * from './invoice/template';
 export * from './invoices';
 export * from './logo';

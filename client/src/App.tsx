@@ -4,6 +4,7 @@ import { AppShell } from '@/components/layout/AppShell';
 import { ClientDetailPage } from '@/pages/ClientDetailPage';
 import { ClientsPage } from '@/pages/ClientsPage';
 import { DashboardPage } from '@/pages/DashboardPage';
+import { InvoiceBuilderPage } from '@/pages/InvoiceBuilderPage';
 import { InvoiceDetailPage } from '@/pages/InvoiceDetailPage';
 import { InvoicesPage } from '@/pages/InvoicesPage';
 import { LoginPage } from '@/pages/LoginPage';
@@ -20,7 +21,9 @@ export function App() {
           <Route element={<AppShell />}>
             <Route index element={<DashboardPage />} />
             <Route path="invoices" element={<InvoicesPage />} />
+            <Route path="invoices/new" element={<InvoiceBuilderPage />} />
             <Route path="invoices/:id" element={<InvoiceDetailPage />} />
+            <Route path="invoices/:id/edit" element={<InvoiceBuilderPage />} />
             <Route path="clients" element={<ClientsPage />} />
             <Route path="clients/:id" element={<ClientDetailPage />} />
             <Route path="projects" element={<ProjectsPage />} />

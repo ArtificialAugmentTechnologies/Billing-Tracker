@@ -32,7 +32,10 @@ export function InvoicePreview({ document: invoice }: { document: InvoiceDocumen
     if (!container) return;
 
     const observer = new ResizeObserver(([entry]) => {
-      setScale(Math.min(1, entry.contentRect.width / A4_WIDTH_PX));
+      // A hidden preview measures zero, so it keeps its last size until it's shown again.
+      if (entry.contentRect.width > 0) {
+        setScale(Math.min(1, entry.contentRect.width / A4_WIDTH_PX));
+      }
     });
     observer.observe(container);
     return () => observer.disconnect();

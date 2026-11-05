@@ -28,7 +28,7 @@ export interface TaxInput {
   rate?: number | null;
 }
 
-export interface InvoiceInput {
+export interface InvoiceCalcInput {
   items: LineItemInput[];
   discounts?: DiscountInput[];
   tax?: TaxInput;
@@ -79,7 +79,7 @@ export function calculateInvoice({
   discounts = [],
   tax,
   advances = [],
-}: InvoiceInput): InvoiceTotals {
+}: InvoiceCalcInput): InvoiceTotals {
   let subtotal = 0n;
   const lines = items.map((item) => {
     const gross = multiplyDivide(toHundredths(item.qty), toHundredths(item.rate), 100n);
