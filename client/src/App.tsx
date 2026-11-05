@@ -1,9 +1,13 @@
 import { BrowserRouter, Route, Routes } from 'react-router-dom';
 import { RequireAuth } from '@/components/auth/RequireAuth';
 import { AppShell } from '@/components/layout/AppShell';
+import { ClientDetailPage } from '@/pages/ClientDetailPage';
+import { ClientsPage } from '@/pages/ClientsPage';
 import { DashboardPage } from '@/pages/DashboardPage';
 import { LoginPage } from '@/pages/LoginPage';
 import { PlaceholderPage } from '@/pages/PlaceholderPage';
+import { ProjectDetailPage } from '@/pages/ProjectDetailPage';
+import { ProjectsPage } from '@/pages/ProjectsPage';
 
 export function App() {
   return (
@@ -14,8 +18,10 @@ export function App() {
           <Route element={<AppShell />}>
             <Route index element={<DashboardPage />} />
             <Route path="invoices" element={<PlaceholderPage title="Invoices" phase={6} />} />
-            <Route path="clients" element={<PlaceholderPage title="Clients" phase={3} />} />
-            <Route path="projects" element={<PlaceholderPage title="Projects" phase={3} />} />
+            <Route path="clients" element={<ClientsPage />} />
+            <Route path="clients/:id" element={<ClientDetailPage />} />
+            <Route path="projects" element={<ProjectsPage />} />
+            <Route path="projects/:id" element={<ProjectDetailPage />} />
             <Route path="payments" element={<PlaceholderPage title="Payments" phase={8} />} />
             <Route path="reports" element={<PlaceholderPage title="Reports" phase={9} />} />
             <Route path="settings" element={<PlaceholderPage title="Settings" phase={10} />} />

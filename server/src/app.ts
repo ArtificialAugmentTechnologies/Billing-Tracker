@@ -4,7 +4,10 @@ import express from 'express';
 import helmet from 'helmet';
 import { env } from './config/env';
 import { errorHandler } from './lib/http';
+import { requireAuth } from './middleware/auth';
 import { authRouter } from './routes/auth';
+import { clientsRouter } from './routes/clients';
+import { milestonesRouter, projectsRouter } from './routes/projects';
 
 export const app = express();
 
@@ -18,5 +21,8 @@ app.get('/api/health', (_req, res) => {
 });
 
 app.use('/api/auth', authRouter);
+app.use('/api/clients', requireAuth, clientsRouter);
+app.use('/api/projects', requireAuth, projectsRouter);
+app.use('/api/milestones', requireAuth, milestonesRouter);
 
 app.use(errorHandler);

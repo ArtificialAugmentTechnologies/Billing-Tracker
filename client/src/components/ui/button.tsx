@@ -11,6 +11,7 @@ const buttonVariants = cva(
         primary: 'bg-orange text-navy hover:bg-orange/90',
         outline: 'border border-border bg-card text-foreground hover:bg-muted',
         ghost: 'text-foreground hover:bg-muted',
+        destructive: 'bg-red-700 text-white hover:bg-red-800',
       },
       size: {
         default: 'h-10 px-4',
