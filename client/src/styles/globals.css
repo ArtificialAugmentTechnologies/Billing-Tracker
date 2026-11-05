@@ -1,0 +1,51 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* Brand: #1B1934, #FF5F2E, #F6F3EC, #5F5C72, #C9C6D8 */
+    --navy: 27 25 52;
+    --orange: 255 95 46;
+    --cream: 246 243 236;
+    --grey-light: 95 92 114;
+    --grey-navy: 201 198 216;
+
+    --background: var(--cream);
+    --foreground: var(--navy);
+    --card: 255 255 255;
+    --muted: 239 235 226;
+    --muted-foreground: var(--grey-light);
+    --border: 228 223 212;
+  }
+
+  .dark {
+    --background: var(--navy);
+    --foreground: var(--cream);
+    --card: 37 35 69;
+    --muted: 48 45 84;
+    --muted-foreground: var(--grey-navy);
+    --border: 58 55 96;
+  }
+
+  body {
+    @apply bg-background font-sans text-foreground antialiased;
+  }
+
+  h1,
+  h2,
+  h3 {
+    @apply font-heading;
+  }
+
+  :focus-visible {
+    @apply outline-none ring-2 ring-orange ring-offset-2 ring-offset-background;
+  }
+}
+
+@layer components {
+  /* Orange mono caption that echoes the invoice's section labels */
+  .section-label {
+    @apply font-mono text-[11px] font-medium uppercase tracking-label text-orange;
+  }
+}

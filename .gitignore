@@ -1,0 +1,17 @@
+node_modules/
+dist/
+build/
+*.log
+.DS_Store
+coverage/
+
+# Secrets: only the .env.example files are committed
+.env
+.env.*
+!.env.example
+
+# Generated invoices and uploads
+server/storage/
+
+# Personal Claude Code settings
+.claude/settings.local.json
