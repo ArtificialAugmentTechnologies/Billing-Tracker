@@ -18,6 +18,7 @@ export const invoiceRowSelect = {
   invoiceNo: true,
   invoiceDate: true,
   dueDate: true,
+  client: { select: { name: true } },
   project: { select: { name: true } },
 } satisfies Prisma.InvoiceSelect;
 
@@ -50,6 +51,7 @@ export function toInvoiceRow(invoice: InvoiceRowData): InvoiceRow {
   return {
     id: invoice.id,
     invoiceNo: invoice.invoiceNo,
+    clientName: invoice.client.name,
     projectName: invoice.project?.name ?? null,
     invoiceDate: toDateString(invoice.invoiceDate),
     dueDate: toDateString(invoice.dueDate),

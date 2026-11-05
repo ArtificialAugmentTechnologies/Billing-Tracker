@@ -7,9 +7,14 @@ const longDate = new Intl.DateTimeFormat('en-GB', {
   timeZone: 'UTC',
 });
 
+/** Indian grouping with two decimals and no currency sign, e.g. 1,25,000.00 */
+export function formatAmount(amount: number) {
+  return inr.format(Math.abs(amount));
+}
+
 /** Indian grouping with two decimals, e.g. ₹ 1,25,000.00, or − ₹ 2,000.00 when negative. */
 export function formatINR(amount: number) {
-  const formatted = `₹ ${inr.format(Math.abs(amount))}`;
+  const formatted = `₹ ${formatAmount(amount)}`;
   return Math.round(amount * 100) < 0 ? `− ${formatted}` : formatted;
 }
 

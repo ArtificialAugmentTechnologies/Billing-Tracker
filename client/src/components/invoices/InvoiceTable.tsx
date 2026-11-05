@@ -6,6 +6,7 @@ import {
   type InvoiceStatus,
 } from '@a2/shared';
 import { FileText } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import { EmptyState } from '@/components/ui/feedback';
 import { Table, tdClass, thClass } from '@/components/ui/page';
 import { StatusBadge, type BadgeTone } from '@/components/ui/status-badge';
@@ -19,7 +20,12 @@ const STATUS_TONES: Record<InvoiceStatus, BadgeTone> = {
   CANCELLED: 'neutral',
 };
 
-export function InvoiceTable({ invoices }: { invoices: InvoiceRow[] }) {
+interface InvoiceTableProps {
+  invoices: InvoiceRow[];
+  showClient?: boolean;
+}
+
+export function InvoiceTable({ invoices, showClient }: InvoiceTableProps) {
   if (invoices.length === 0) {
     return (
       <EmptyState
@@ -35,6 +41,7 @@ export function InvoiceTable({ invoices }: { invoices: InvoiceRow[] }) {
       <thead>
         <tr>
           <th className={thClass}>Invoice no.</th>
+          {showClient && <th className={thClass}>Client</th>}
           <th className={thClass}>Date</th>
           <th className={thClass}>Due</th>
           <th className={`${thClass} text-right`}>Total</th>
@@ -44,8 +51,13 @@ export function InvoiceTable({ invoices }: { invoices: InvoiceRow[] }) {
       </thead>
       <tbody>
         {invoices.map((invoice) => (
-          <tr key={invoice.id}>
-            <td className={`${tdClass} whitespace-nowrap font-medium`}>{invoice.invoiceNo}</td>
+          <tr key={invoice.id} className="hover:bg-muted/40">
+            <td className={`${tdClass} whitespace-nowrap font-medium`}>
+              <Link to={`/invoices/${invoice.id}`} className="hover:text-orange">
+                {invoice.invoiceNo}
+              </Link>
+            </td>
+            {showClient && <td className={tdClass}>{invoice.clientName}</td>}
             <td className={`${tdClass} whitespace-nowrap`}>{formatDate(invoice.invoiceDate)}</td>
             <td className={`${tdClass} whitespace-nowrap`}>{formatDate(invoice.dueDate)}</td>
             <td className={`${tdClass} whitespace-nowrap text-right`}>

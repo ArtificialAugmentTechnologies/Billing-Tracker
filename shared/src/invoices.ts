@@ -20,6 +20,7 @@ export const INVOICE_STATUS_LABELS: Record<InvoiceStatus, string> = {
 export interface InvoiceRow {
   id: string;
   invoiceNo: string;
+  clientName: string;
   projectName: string | null;
   invoiceDate: string;
   dueDate: string;

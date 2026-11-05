@@ -1,5 +1,6 @@
+import type { LogoVariant } from '@a2/shared';
 import { cn } from '@/lib/utils';
-import { LogoMark, type LogoVariant } from './LogoMark';
+import { LogoMark } from './LogoMark';
 
 interface LogoProps {
   variant?: LogoVariant;

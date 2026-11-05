@@ -7,6 +7,7 @@ import { errorHandler } from './lib/http';
 import { requireAuth } from './middleware/auth';
 import { authRouter } from './routes/auth';
 import { clientsRouter } from './routes/clients';
+import { invoicesRouter } from './routes/invoices';
 import { milestonesRouter, projectsRouter } from './routes/projects';
 
 export const app = express();
@@ -24,5 +25,6 @@ app.use('/api/auth', authRouter);
 app.use('/api/clients', requireAuth, clientsRouter);
 app.use('/api/projects', requireAuth, projectsRouter);
 app.use('/api/milestones', requireAuth, milestonesRouter);
+app.use('/api/invoices', requireAuth, invoicesRouter);
 
 app.use(errorHandler);

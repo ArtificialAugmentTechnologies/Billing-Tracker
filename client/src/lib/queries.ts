@@ -5,6 +5,8 @@ import type {
   ClientSort,
   ClientSummary,
   ClientType,
+  InvoiceDocument,
+  InvoiceRow,
   MilestonePayload,
   MilestoneRecord,
   ProjectDetail,
@@ -116,6 +118,20 @@ export function useDeleteProject() {
   return useMutation({
     mutationFn: (id: string) => api<void>(`/projects/${id}`, send('DELETE')),
     onSuccess: () => refreshAll(queryClient),
+  });
+}
+
+export function useInvoices() {
+  return useQuery({
+    queryKey: ['invoices', 'list'],
+    queryFn: () => api<InvoiceRow[]>('/invoices'),
+  });
+}
+
+export function useInvoiceDocument(id: string) {
+  return useQuery({
+    queryKey: ['invoices', 'document', id],
+    queryFn: () => api<InvoiceDocument>(`/invoices/${id}/document`),
   });
 }
 
