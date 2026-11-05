@@ -194,6 +194,17 @@ td.num { color: ${greyOnLight}; }
 }
 .receipt-amount .words { margin-top: 1mm; padding: 0; background: none; }
 
+/* Outstanding statement */
+.statement-client { break-inside: avoid; }
+.statement-name {
+  display: flex;
+  justify-content: space-between;
+  gap: 4mm;
+  margin-bottom: 1.5mm;
+  font-size: 10pt;
+}
+.statement-name span { font-weight: 600; }
+
 /* Footer columns and the closing bar stay together, at the bottom of the last page */
 .closing { margin-top: auto; break-inside: avoid; }
 .footer {

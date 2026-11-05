@@ -11,6 +11,7 @@ import { clientsRouter } from './routes/clients';
 import { invoicesRouter } from './routes/invoices';
 import { paymentsRouter } from './routes/payments';
 import { milestonesRouter, projectsRouter } from './routes/projects';
+import { dashboardRouter, reportsRouter } from './routes/reports';
 import { refreshOverdue } from './services/payments';
 
 export const app = express();
@@ -31,5 +32,7 @@ app.use('/api/milestones', requireAuth, milestonesRouter);
 app.use('/api/invoices', requireAuth, refreshOverdue, invoicesRouter);
 app.use('/api/payments', requireAuth, refreshOverdue, paymentsRouter);
 app.use('/api/catalog', requireAuth, catalogRouter);
+app.use('/api/dashboard', requireAuth, refreshOverdue, dashboardRouter);
+app.use('/api/reports', requireAuth, refreshOverdue, reportsRouter);
 
 app.use(errorHandler);

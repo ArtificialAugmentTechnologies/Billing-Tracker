@@ -5,7 +5,7 @@ let browser: Promise<Browser> | null = null;
 /**
  * One browser is shared, as starting Chrome for every PDF would be slow. Puppeteer is a very
  * large package, so it loads on the first PDF instead of slowing every server start.
- * The dev script uses `node --watch` because the server hangs on Puppeteer under `tsx watch`.
+ * The dev script uses `node --watch-path` because the server hangs on Puppeteer under `tsx watch`.
  */
 function getBrowser() {
   browser ??= import('puppeteer')

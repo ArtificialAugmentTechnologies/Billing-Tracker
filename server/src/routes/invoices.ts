@@ -1,18 +1,22 @@
 import {
   financialYear,
+  INVOICE_STATUS_LABELS,
+  invoiceListQuery,
   invoiceSchema,
   nextInvoiceNumber,
   paymentSchema,
   type InvoiceBuilderDefaults,
+  type InvoiceListResponse,
   type InvoiceRecord,
 } from '@a2/shared';
 import { Router } from 'express';
 import { z } from 'zod';
 import { audit } from '../lib/audit';
+import { sendTable } from '../lib/export';
 import { asyncHandler, HttpError } from '../lib/http';
 import { prisma } from '../lib/prisma';
 import { requireRole } from '../middleware/auth';
-import { invoiceRowSelect, toDateString, toInvoiceRow } from '../services/billing';
+import { invoiceRowSelect, toDateString, todayInIndia, toInvoiceRow } from '../services/billing';
 import { loadInvoiceDocument, toCompanyBlock } from '../services/invoice-document';
 import { getInvoicePdf } from '../services/invoice-pdf';
 import {
@@ -25,6 +29,7 @@ import {
   toInvoiceRows,
 } from '../services/invoices';
 import { loadInvoicePayments, recordPayment } from '../services/payments';
+import { findInvoices } from '../services/reports';
 
 async function loadSettings() {
   const settings = await prisma.companySettings.findUnique({ where: { id: 1 } });
@@ -47,12 +52,67 @@ export const invoicesRouter = Router();
 
 invoicesRouter.get(
   '/',
+  asyncHandler(async (req, res) => {
+    const filters = invoiceListQuery.parse(req.query);
+    const rows = await findInvoices(filters);
+    const start = (filters.page - 1) * filters.pageSize;
+
+    const response: InvoiceListResponse = {
+      rows: rows.slice(start, start + filters.pageSize),
+      total: rows.length,
+      page: filters.page,
+      pageSize: filters.pageSize,
+    };
+    res.json(response);
+  }),
+);
+
+/** Invoices that can take a payment, for choosing one when recording it. */
+invoicesRouter.get(
+  '/open',
   asyncHandler(async (_req, res) => {
     const invoices = await prisma.invoice.findMany({
+      where: { status: { in: ['SENT', 'PARTIALLY_PAID', 'OVERDUE'] } },
       select: invoiceRowSelect,
-      orderBy: [{ invoiceDate: 'desc' }, { invoiceNo: 'desc' }],
+      orderBy: { dueDate: 'asc' },
     });
     res.json(invoices.map(toInvoiceRow));
+  }),
+);
+
+invoicesRouter.get(
+  '/export',
+  asyncHandler(async (req, res) => {
+    const filters = invoiceListQuery.parse(req.query);
+    const format = z.enum(['csv', 'xlsx']).parse(req.query.format);
+    const rows = await findInvoices(filters);
+
+    await sendTable(res, format, {
+      filename: `invoices-${todayInIndia()}`,
+      sheet: 'Invoices',
+      columns: [
+        'Invoice no.',
+        'Client',
+        'Project',
+        'Invoice date',
+        'Due date',
+        'Status',
+        'Total',
+        'Paid',
+        'Balance',
+      ],
+      rows: rows.map((row) => [
+        row.invoiceNo,
+        row.clientName,
+        row.projectName,
+        row.invoiceDate,
+        row.dueDate,
+        INVOICE_STATUS_LABELS[row.status],
+        row.total,
+        row.paid,
+        row.balance,
+      ]),
+    });
   }),
 );
 

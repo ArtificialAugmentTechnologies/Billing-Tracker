@@ -6,17 +6,23 @@ import type {
   ClientSort,
   ClientSummary,
   ClientType,
+  DashboardData,
+  FinancialYearRow,
   InvoiceBuilderDefaults,
   InvoiceDocument,
+  InvoiceListQuery,
+  InvoiceListResponse,
   InvoicePayload,
   InvoicePayments,
   InvoiceRecord,
   InvoiceRow,
+  MilestonePayload,
+  MilestoneRecord,
+  MonthlyRevenueReport,
+  OutstandingReport,
   PaymentMode,
   PaymentPayload,
   PaymentRow,
-  MilestonePayload,
-  MilestoneRecord,
   ProjectDetail,
   ProjectPayload,
   ProjectStatus,
@@ -31,10 +37,10 @@ import {
 } from '@tanstack/react-query';
 import { api } from './api';
 
-function toQueryString(params: Record<string, string | undefined>) {
-  const entries = Object.entries(params).filter((entry): entry is [string, string] =>
-    Boolean(entry[1]),
-  );
+export function toQueryString(params: object) {
+  const entries = Object.entries(params)
+    .filter(([, value]) => value !== undefined && value !== '')
+    .map(([key, value]) => [key, String(value)]);
   return entries.length ? `?${new URLSearchParams(entries)}` : '';
 }
 
@@ -131,10 +137,50 @@ export function useDeleteProject() {
   });
 }
 
-export function useInvoices() {
+export function useInvoiceList(query: InvoiceListQuery) {
   return useQuery({
-    queryKey: ['invoices', 'list'],
-    queryFn: () => api<InvoiceRow[]>('/invoices'),
+    queryKey: ['invoices', 'list', query],
+    queryFn: () => api<InvoiceListResponse>(`/invoices${toQueryString(query)}`),
+    placeholderData: keepPreviousData,
+  });
+}
+
+export function useOpenInvoices(enabled: boolean) {
+  return useQuery({
+    queryKey: ['invoices', 'open'],
+    queryFn: () => api<InvoiceRow[]>('/invoices/open'),
+    enabled,
+  });
+}
+
+export function useDashboard() {
+  return useQuery({
+    queryKey: ['dashboard'],
+    queryFn: () => api<DashboardData>('/dashboard'),
+    placeholderData: keepPreviousData,
+  });
+}
+
+export function useOutstandingReport() {
+  return useQuery({
+    queryKey: ['reports', 'outstanding'],
+    queryFn: () => api<OutstandingReport>('/reports/outstanding'),
+  });
+}
+
+export function useMonthlyReport(fy: string) {
+  return useQuery({
+    queryKey: ['reports', 'monthly', fy],
+    queryFn: () => api<MonthlyRevenueReport>(`/reports/monthly${toQueryString({ fy })}`),
+    enabled: Boolean(fy),
+    placeholderData: keepPreviousData,
+  });
+}
+
+export function useFinancialYears() {
+  return useQuery({
+    queryKey: ['reports', 'fy-summary'],
+    queryFn: () => api<FinancialYearRow[]>('/reports/fy-summary'),
   });
 }
 
@@ -181,6 +227,8 @@ export function useCatalog() {
 /** Invoices feed the client and project totals, so a change refreshes those too. */
 function refreshInvoices(queryClient: QueryClient) {
   queryClient.invalidateQueries({ queryKey: ['invoices'] });
+  queryClient.invalidateQueries({ queryKey: ['dashboard'] });
+  queryClient.invalidateQueries({ queryKey: ['reports'] });
   refreshAll(queryClient);
 }
 

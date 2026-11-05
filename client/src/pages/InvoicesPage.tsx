@@ -1,14 +1,87 @@
-import { Plus } from 'lucide-react';
+import {
+  formatDate,
+  formatINR,
+  INVOICE_STATUS_LABELS,
+  INVOICE_STATUSES,
+  type InvoiceListQuery,
+  type InvoiceSort,
+  type InvoiceStatus,
+} from '@a2/shared';
+import { ArrowDown, ArrowUp, Download, FileText, Plus, Search } from 'lucide-react';
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { InvoiceTable } from '@/components/invoices/InvoiceTable';
+import { toast } from 'sonner';
+import { InvoiceStatusBadge } from '@/components/invoices/InvoiceTable';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { ErrorState, ListSkeleton } from '@/components/ui/feedback';
-import { PageHeader } from '@/components/ui/page';
-import { useInvoices } from '@/lib/queries';
+import { EmptyState, ErrorState, ListSkeleton } from '@/components/ui/feedback';
+import { Select } from '@/components/ui/form';
+import { Input } from '@/components/ui/input';
+import { PageHeader, Table, tdClass, thClass } from '@/components/ui/page';
+import { downloadFile } from '@/lib/api';
+import { toQueryString, useClients, useFinancialYears, useInvoiceList } from '@/lib/queries';
+import { useDebouncedValue } from '@/lib/use-debounced-value';
+import { cn } from '@/lib/utils';
+
+const PAGE_SIZE = 25;
+
+interface Filters {
+  search: string;
+  status: InvoiceStatus | '';
+  clientId: string;
+  fy: string;
+  from: string;
+  to: string;
+}
+
+const NO_FILTERS: Filters = { search: '', status: '', clientId: '', fy: '', from: '', to: '' };
+
+const COLUMNS: { key: InvoiceSort; label: string; align?: 'right'; className?: string }[] = [
+  { key: 'invoiceNo', label: 'Invoice no.' },
+  { key: 'clientName', label: 'Client' },
+  { key: 'projectName', label: 'Project', className: 'hidden 2xl:table-cell' },
+  { key: 'invoiceDate', label: 'Date', className: 'hidden md:table-cell' },
+  { key: 'dueDate', label: 'Due', className: 'hidden lg:table-cell' },
+  { key: 'total', label: 'Total', align: 'right', className: 'hidden sm:table-cell' },
+  { key: 'paid', label: 'Paid', align: 'right', className: 'hidden xl:table-cell' },
+  { key: 'balance', label: 'Balance', align: 'right' },
+  { key: 'status', label: 'Status' },
+];
 
 export function InvoicesPage() {
-  const invoices = useInvoices();
+  const [filters, setFilters] = useState(NO_FILTERS);
+  const [sort, setSort] = useState<InvoiceSort>('invoiceDate');
+  const [dir, setDir] = useState<'asc' | 'desc'>('desc');
+  const [page, setPage] = useState(1);
+
+  const search = useDebouncedValue(filters.search);
+  const criteria: InvoiceListQuery = { ...filters, search, status: filters.status || undefined };
+  const invoices = useInvoiceList({ ...criteria, sort, dir, page, pageSize: PAGE_SIZE });
+  const { data: clients = [] } = useClients();
+  const { data: years = [] } = useFinancialYears();
+
+  const filtered = Object.values(filters).some(Boolean);
+
+  const update = (change: Partial<Filters>) => {
+    setFilters((current) => ({ ...current, ...change }));
+    setPage(1);
+  };
+
+  const sortBy = (key: InvoiceSort) => {
+    const sameColumn = sort === key;
+    setSort(key);
+    setDir(sameColumn && dir === 'asc' ? 'desc' : 'asc');
+    setPage(1);
+  };
+
+  const exportAs = (format: 'csv' | 'xlsx') =>
+    downloadFile(`/invoices/export${toQueryString({ ...criteria, sort, dir, format })}`).catch(
+      (error: Error) => toast.error(error.message),
+    );
+
+  const total = invoices.data?.total ?? 0;
+  const first = total === 0 ? 0 : (page - 1) * PAGE_SIZE + 1;
+  const last = Math.min(page * PAGE_SIZE, total);
 
   return (
     <>
@@ -16,21 +89,215 @@ export function InvoicesPage() {
         label="Billing"
         title="Invoices"
         actions={
-          <Button asChild>
-            <Link to="/invoices/new">
-              <Plus className="h-4 w-4" aria-hidden />
-              New invoice
-            </Link>
-          </Button>
+          <>
+            <Button variant="outline" onClick={() => exportAs('csv')}>
+              <Download className="h-4 w-4" aria-hidden />
+              CSV
+            </Button>
+            <Button variant="outline" onClick={() => exportAs('xlsx')}>
+              <Download className="h-4 w-4" aria-hidden />
+              Excel
+            </Button>
+            <Button asChild>
+              <Link to="/invoices/new">
+                <Plus className="h-4 w-4" aria-hidden />
+                New invoice
+              </Link>
+            </Button>
+          </>
         }
       />
+
+      <div className="mb-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
+        <div className="relative sm:col-span-2 lg:col-span-3 xl:col-span-2">
+          <Search
+            className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground"
+            aria-hidden
+          />
+          <Input
+            type="search"
+            value={filters.search}
+            onChange={(event) => update({ search: event.target.value })}
+            placeholder="Search invoice, client or project"
+            aria-label="Search invoices"
+            className="pl-9"
+          />
+        </div>
+        <Select
+          value={filters.status}
+          onChange={(event) => update({ status: event.target.value as InvoiceStatus | '' })}
+          aria-label="Filter by status"
+        >
+          <option value="">All statuses</option>
+          {INVOICE_STATUSES.map((status) => (
+            <option key={status} value={status}>
+              {INVOICE_STATUS_LABELS[status]}
+            </option>
+          ))}
+        </Select>
+        <Select
+          value={filters.clientId}
+          onChange={(event) => update({ clientId: event.target.value })}
+          aria-label="Filter by client"
+        >
+          <option value="">All clients</option>
+          {clients.map((client) => (
+            <option key={client.id} value={client.id}>
+              {client.name}
+            </option>
+          ))}
+        </Select>
+        <Select
+          value={filters.fy}
+          onChange={(event) => update({ fy: event.target.value })}
+          aria-label="Filter by financial year"
+        >
+          <option value="">All years</option>
+          {years.map((year) => (
+            <option key={year.fy} value={year.fy}>
+              FY {year.fy}
+            </option>
+          ))}
+        </Select>
+        <div className="grid grid-cols-2 gap-3 max-xl:sm:col-span-2 lg:col-span-1 xl:col-span-1 xl:grid-cols-1">
+          <Input
+            type="date"
+            value={filters.from}
+            onChange={(event) => update({ from: event.target.value })}
+            aria-label="From date"
+          />
+          <Input
+            type="date"
+            value={filters.to}
+            onChange={(event) => update({ to: event.target.value })}
+            aria-label="To date"
+          />
+        </div>
+      </div>
+
       {invoices.isPending ? (
         <ListSkeleton />
       ) : invoices.isError ? (
         <ErrorState message="We couldn't load your invoices." onRetry={() => invoices.refetch()} />
+      ) : invoices.data.rows.length === 0 ? (
+        <Card>
+          {filtered ? (
+            <EmptyState
+              icon={Search}
+              title="No matching invoices"
+              description="Try a different search or filter."
+              action={
+                <Button variant="outline" onClick={() => update(NO_FILTERS)}>
+                  Clear filters
+                </Button>
+              }
+            />
+          ) : (
+            <EmptyState
+              icon={FileText}
+              title="No invoices yet"
+              description="Create your first invoice to get started."
+            />
+          )}
+        </Card>
       ) : (
-        <Card className="overflow-hidden">
-          <InvoiceTable invoices={invoices.data} showClient />
+        <Card className={cn('overflow-hidden', invoices.isPlaceholderData && 'opacity-60')}>
+          <Table>
+            <thead>
+              <tr>
+                {COLUMNS.map((column) => (
+                  <th
+                    key={column.key}
+                    aria-sort={
+                      sort === column.key ? (dir === 'asc' ? 'ascending' : 'descending') : undefined
+                    }
+                    className={cn(
+                      thClass,
+                      column.align === 'right' && 'text-right',
+                      column.className,
+                    )}
+                  >
+                    <button
+                      type="button"
+                      onClick={() => sortBy(column.key)}
+                      className="inline-flex items-center gap-1 uppercase hover:text-foreground"
+                    >
+                      {column.label}
+                      {sort === column.key &&
+                        (dir === 'asc' ? (
+                          <ArrowUp className="h-3 w-3" aria-hidden />
+                        ) : (
+                          <ArrowDown className="h-3 w-3" aria-hidden />
+                        ))}
+                    </button>
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {invoices.data.rows.map((invoice) => (
+                <tr key={invoice.id} className="hover:bg-muted/40">
+                  <td className={`${tdClass} whitespace-nowrap font-medium`}>
+                    <Link to={`/invoices/${invoice.id}`} className="hover:text-orange">
+                      {invoice.invoiceNo}
+                    </Link>
+                  </td>
+                  <td className={tdClass}>{invoice.clientName}</td>
+                  <td className={`${tdClass} hidden 2xl:table-cell`}>
+                    {invoice.projectName ?? '—'}
+                  </td>
+                  <td className={`${tdClass} hidden whitespace-nowrap md:table-cell`}>
+                    {formatDate(invoice.invoiceDate)}
+                  </td>
+                  <td className={`${tdClass} hidden whitespace-nowrap lg:table-cell`}>
+                    {formatDate(invoice.dueDate)}
+                  </td>
+                  <td
+                    className={`${tdClass} hidden whitespace-nowrap text-right tabular-nums sm:table-cell`}
+                  >
+                    {formatINR(invoice.total)}
+                  </td>
+                  <td
+                    className={`${tdClass} hidden whitespace-nowrap text-right tabular-nums xl:table-cell`}
+                  >
+                    {formatINR(invoice.paid)}
+                  </td>
+                  <td
+                    className={`${tdClass} whitespace-nowrap text-right font-medium tabular-nums`}
+                  >
+                    {formatINR(invoice.balance)}
+                  </td>
+                  <td className={tdClass}>
+                    <InvoiceStatusBadge status={invoice.status} />
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </Table>
+
+          <div className="flex flex-wrap items-center justify-between gap-3 px-5 py-3 text-sm">
+            <p className="text-muted-foreground">
+              {first}–{last} of {total}
+            </p>
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={page === 1}
+                onClick={() => setPage(page - 1)}
+              >
+                Previous
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={last >= total}
+                onClick={() => setPage(page + 1)}
+              >
+                Next
+              </Button>
+            </div>
+          </div>
         </Card>
       )}
     </>

@@ -3,12 +3,11 @@ import {
   PAYMENT_MODE_LABELS,
   PAYMENT_MODES,
   paymentSchema,
-  type InvoiceStatus,
   type PaymentInput,
   type PaymentPayload,
 } from '@a2/shared';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
@@ -16,9 +15,7 @@ import { Dialog } from '@/components/ui/dialog';
 import { Field, Select, Textarea } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { todayLocal } from '@/lib/invoice-preview';
-import { useInvoices, useRecordPayment } from '@/lib/queries';
-
-const OPEN_STATUSES: InvoiceStatus[] = ['SENT', 'PARTIALLY_PAID', 'OVERDUE'];
+import { useOpenInvoices, useRecordPayment } from '@/lib/queries';
 
 const defaults = (amount: number): PaymentInput => ({
   date: todayLocal(),
@@ -37,7 +34,7 @@ interface PaymentDialogProps {
 
 export function PaymentDialog({ open, onOpenChange, invoice }: PaymentDialogProps) {
   const record = useRecordPayment();
-  const invoices = useInvoices();
+  const { data: openInvoices = [] } = useOpenInvoices(open && !invoice);
   const [chosenId, setChosenId] = useState('');
   const {
     register,
@@ -49,11 +46,6 @@ export function PaymentDialog({ open, onOpenChange, invoice }: PaymentDialogProp
     resolver: zodResolver(paymentSchema),
     defaultValues: defaults(0),
   });
-
-  const openInvoices = useMemo(
-    () => (invoices.data ?? []).filter((row) => OPEN_STATUSES.includes(row.status)),
-    [invoices.data],
-  );
 
   useEffect(() => {
     if (!open) return;

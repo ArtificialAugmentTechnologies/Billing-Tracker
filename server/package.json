@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "node --watch --env-file-if-exists=.env --import tsx src/index.ts",
+    "dev": "node --watch-path=src --watch-path=../shared/src --import tsx src/index.ts",
     "typecheck": "tsc --noEmit",
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate dev",
@@ -20,6 +20,7 @@
     "bcryptjs": "^3.0.3",
     "cookie-parser": "^1.4.7",
     "cors": "^2.8.5",
+    "exceljs": "^4.4.0",
     "express": "^4.21.1",
     "express-rate-limit": "^8.7.3",
     "helmet": "^8.0.0",

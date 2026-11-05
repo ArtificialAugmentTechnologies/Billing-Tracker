@@ -24,20 +24,20 @@ export function PageHeader({ label, title, subtitle, actions }: PageHeaderProps)
   );
 }
 
-export function StatCard({
-  label,
-  amount,
-  accent,
-}: {
+interface StatCardProps {
   label: string;
-  amount: number;
+  amount?: number;
+  /** A plain count, for tiles that aren't money. */
+  count?: number;
   accent?: boolean;
-}) {
+}
+
+export function StatCard({ label, amount, count, accent }: StatCardProps) {
   return (
     <Card className="p-5">
       <p className="section-label">{label}</p>
       <p className={cn('mt-2 font-heading text-2xl font-extrabold', accent && 'text-orange')}>
-        {formatINR(amount)}
+        {count ?? formatINR(amount ?? 0)}
       </p>
     </Card>
   );

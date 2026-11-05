@@ -17,6 +17,14 @@
     --muted: 239 235 226;
     --muted-foreground: var(--grey-light);
     --border: 228 223 212;
+
+    /* Chart colours, checked for colour blindness and contrast on the card surface */
+    --chart-billed: 79 70 184;
+    --chart-received: 255 95 46;
+    --chart-paid: 44 154 75;
+    --chart-partial: 15 163 199;
+    --chart-sent: 79 70 184;
+    --chart-overdue: 255 95 46;
   }
 
   .dark {
@@ -26,6 +34,13 @@
     --muted: 48 45 84;
     --muted-foreground: var(--grey-navy);
     --border: 58 55 96;
+
+    --chart-billed: 133 124 230;
+    --chart-received: 232 98 47;
+    --chart-paid: 48 160 80;
+    --chart-partial: 22 157 184;
+    --chart-sent: 140 120 234;
+    --chart-overdue: 232 98 47;
   }
 
   body {
