@@ -28,6 +28,11 @@ type InvoiceRowData = Prisma.InvoiceGetPayload<{ select: typeof invoiceRowSelect
 const paidOn = (invoice: InvoiceTotals) =>
   invoice.payments.reduce((sum, payment) => sum.add(payment.amount), new Prisma.Decimal(0));
 
+export function statusAfterPayment(total: Prisma.Decimal, paid: Prisma.Decimal): InvoiceStatus {
+  if (paid.greaterThanOrEqualTo(total)) return 'PAID';
+  return paid.greaterThan(0) ? 'PARTIALLY_PAID' : 'SENT';
+}
+
 /** Drafts and cancelled invoices don't count towards billed, received or outstanding. */
 export function summarizeBilling(invoices: InvoiceTotals[]): BillingTotals {
   let billed = new Prisma.Decimal(0);

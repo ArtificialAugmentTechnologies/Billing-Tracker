@@ -9,6 +9,26 @@ export class ApiError extends Error {
   }
 }
 
+/** Fetches a file through the session and hands it to the browser as a download. */
+export async function downloadFile(path: string) {
+  const response = await fetch(`${BASE_URL}${path}`, { credentials: 'include' });
+  if (!response.ok) {
+    const body = await response.json().catch(() => null);
+    throw new ApiError(response.status, body?.message ?? "We couldn't download that file");
+  }
+
+  const disposition = response.headers.get('Content-Disposition') ?? '';
+  const url = URL.createObjectURL(await response.blob());
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = disposition.match(/filename="?([^";]+)"?/)?.[1] ?? 'download';
+  document.body.append(link);
+  link.click();
+  link.remove();
+  // Revoking straight away can cancel the download in some browsers.
+  setTimeout(() => URL.revokeObjectURL(url), 60_000);
+}
+
 export async function api<T>(path: string, options: RequestInit = {}): Promise<T> {
   const response = await fetch(`${BASE_URL}${path}`, {
     ...options,

@@ -20,6 +20,10 @@ const STATUS_TONES: Record<InvoiceStatus, BadgeTone> = {
   CANCELLED: 'neutral',
 };
 
+export function InvoiceStatusBadge({ status }: { status: InvoiceStatus }) {
+  return <StatusBadge tone={STATUS_TONES[status]}>{INVOICE_STATUS_LABELS[status]}</StatusBadge>;
+}
+
 interface InvoiceTableProps {
   invoices: InvoiceRow[];
   showClient?: boolean;
@@ -67,9 +71,7 @@ export function InvoiceTable({ invoices, showClient }: InvoiceTableProps) {
               {formatINR(invoice.balance)}
             </td>
             <td className={tdClass}>
-              <StatusBadge tone={STATUS_TONES[invoice.status]}>
-                {INVOICE_STATUS_LABELS[invoice.status]}
-              </StatusBadge>
+              <InvoiceStatusBadge status={invoice.status} />
             </td>
           </tr>
         ))}

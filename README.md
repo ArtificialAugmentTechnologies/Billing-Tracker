@@ -19,6 +19,7 @@ Requires Node.js 22.9 or newer.
 
 ```sh
 npm install
+npx puppeteer browsers install chrome
 npm run db:generate -w server
 npm run db:deploy -w server
 npm run db:seed -w server
@@ -29,6 +30,8 @@ npm run dev
 - API health check: http://localhost:4000/api/health
 
 Sign in as `admin@artificialaugmenttechnologies.com` with the `SEED_ADMIN_PASSWORD` value. Re-running the seed is safe: it never changes existing rows, so an existing admin keeps their password.
+
+PDFs use the Chrome installed by Puppeteer and need internet access for the Google Fonts. Finalized invoices keep their PDF in `server/storage/invoices/`. If that folder is lost, each PDF is made again on its next download, using the current company settings.
 
 After 10 failed sign-ins from one address, sign-in is blocked for 15 minutes. Restarting the server clears the block.
 

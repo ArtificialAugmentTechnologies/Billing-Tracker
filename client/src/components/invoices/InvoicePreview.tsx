@@ -9,6 +9,11 @@ const A4_HEIGHT_PX = 1123;
 // the fonts. The same HTML goes to the PDF, and the frame keeps the app's styles out of it.
 const SHELL_HTML = renderInvoiceHtml(null);
 
+/** Prints just the invoice, using the same page styles as the PDF. */
+export function printInvoicePreview() {
+  document.querySelector<HTMLIFrameElement>('iframe[data-invoice-preview]')?.contentWindow?.print();
+}
+
 export function InvoicePreview({ document: invoice }: { document: InvoiceDocument }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const frameRef = useRef<HTMLIFrameElement>(null);
@@ -51,7 +56,8 @@ export function InvoicePreview({ document: invoice }: { document: InvoiceDocumen
           ref={frameRef}
           title={`Invoice ${invoice.invoiceNo}`}
           srcDoc={SHELL_HTML}
-          sandbox="allow-same-origin"
+          data-invoice-preview
+          sandbox="allow-same-origin allow-modals"
           onLoad={() => {
             setFrameReady(true);
             syncFrame();

@@ -234,12 +234,14 @@ export function renderInvoiceBody(doc: InvoiceDocument) {
         ${renderCallout(doc)}
         ${renderItems(doc)}
         ${renderSummary(doc)}
-        ${renderFooter(doc)}
       </main>
-      <footer class="thanks">
-        <strong>Thank you for your business!</strong>
-        <span>${esc(doc.company.website)}</span>
-      </footer>
+      <div class="closing">
+        ${renderFooter(doc)}
+        <footer class="thanks">
+          <strong>Thank you for your business!</strong>
+          <span>${esc(doc.company.website)}</span>
+        </footer>
+      </div>
     </div>
   `;
 }

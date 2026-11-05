@@ -199,6 +199,23 @@ export function useDuplicateInvoice() {
   });
 }
 
+export function useFinalizeInvoice() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) =>
+      api<{ id: string; invoiceNo: string }>(`/invoices/${id}/finalize`, send('POST')),
+    onSuccess: () => refreshInvoices(queryClient),
+  });
+}
+
+export function useReviseInvoice() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => api<{ id: string }>(`/invoices/${id}/revise`, send('POST')),
+    onSuccess: () => refreshInvoices(queryClient),
+  });
+}
+
 export function useDeleteInvoice() {
   const queryClient = useQueryClient();
   return useMutation({

@@ -109,7 +109,7 @@ body {
 .stripe { height: 1.5mm; background: ${orange}; }
 
 /* Main content */
-.body { display: flex; flex: 1; flex-direction: column; gap: 4mm; padding: 5.5mm 12mm 4.5mm; }
+.body { display: flex; flex-direction: column; gap: 4mm; padding: 5.5mm 12mm 4mm; }
 
 .parties { display: grid; grid-template-columns: 1fr 75mm; gap: 10mm; }
 .billed-name { margin-top: 2mm; font-size: 11pt; font-weight: 700; }
@@ -128,11 +128,12 @@ body {
 .callout p + p { margin-top: 1mm; }
 
 /* Line items */
-table { width: 100%; border-collapse: collapse; }
-thead tr { background: ${navy}; }
+table { width: 100%; border-collapse: separate; border-spacing: 0; }
 thead th {
   padding: 2mm 3mm;
-  border: 0.25mm solid ${navy};
+  background: ${navy};
+  /* Overlaps the next cell, as PDF viewers can show a hairline between touching fills. */
+  box-shadow: 0.3mm 0 0 ${navy};
   color: ${cream};
   font-size: 8pt;
   font-weight: 600;
@@ -182,16 +183,16 @@ td.num { color: ${greyOnLight}; }
 .totals .balance dt { color: ${orange}; }
 .totals .balance dd { font-weight: 700; }
 
-/* Footer columns */
+/* Footer columns and the closing bar stay together, at the bottom of the last page */
+.closing { margin-top: auto; break-inside: avoid; }
 .footer {
   display: grid;
   grid-template-columns: 1fr 1fr 48mm;
   gap: 7mm;
-  margin-top: auto;
+  margin: 0 12mm 4.5mm;
   padding-top: 3mm;
   border-top: 0.25mm solid #E7E3DA;
   font-size: 8pt;
-  break-inside: avoid;
 }
 .footer .label { margin-bottom: 1.5mm; }
 .bank div { display: flex; gap: 2mm; }
@@ -211,7 +212,6 @@ td.num { color: ${greyOnLight}; }
   background: ${navy};
   color: ${cream};
   font-size: 8.5pt;
-  break-inside: avoid;
 }
 .thanks strong { font-weight: 600; }
 .thanks span { color: ${greyOnNavy}; }

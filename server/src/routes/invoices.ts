@@ -1,6 +1,4 @@
 import {
-  addDays,
-  amountInWords,
   financialYear,
   invoiceSchema,
   nextInvoiceNumber,
@@ -12,13 +10,17 @@ import { z } from 'zod';
 import { audit } from '../lib/audit';
 import { asyncHandler, HttpError } from '../lib/http';
 import { prisma } from '../lib/prisma';
+import { requireRole } from '../middleware/auth';
 import { invoiceRowSelect, toDateString, toInvoiceRow } from '../services/billing';
 import { loadInvoiceDocument } from '../services/invoice-document';
+import { getInvoicePdf } from '../services/invoice-pdf';
 import {
   assertLinksMatch,
+  createDraftCopy,
   draftInvoiceNo,
+  finalizeInvoice,
+  invoiceCopyInclude,
   invoiceFormInclude,
-  todayInIndia,
   toInvoiceRows,
 } from '../services/invoices';
 
@@ -219,58 +221,66 @@ invoicesRouter.post(
   asyncHandler(async (req, res) => {
     const source = await prisma.invoice.findUnique({
       where: { id: req.params.id },
-      include: { items: { orderBy: { order: 'asc' } }, discounts: true },
+      include: invoiceCopyInclude,
     });
     if (!source) throw new HttpError(404, 'Invoice not found');
 
-    const invoiceDate = todayInIndia();
-    const copy = await prisma.invoice.create({
-      data: {
-        invoiceNo: draftInvoiceNo(),
-        clientId: source.clientId,
-        projectId: source.projectId,
-        milestoneId: source.milestoneId,
-        subtitle: source.subtitle,
-        invoiceDate: new Date(invoiceDate),
-        dueDate: new Date(addDays(invoiceDate, source.paymentTermDays)),
-        paymentTermDays: source.paymentTermDays,
-        gstEnabled: source.gstEnabled,
-        gstType: source.gstType,
-        gstRate: source.gstRate,
-        subtotal: source.subtotal,
-        discountTotal: source.discountTotal,
-        taxTotal: source.taxTotal,
-        total: source.total,
-        advanceTotal: 0,
-        balanceDue: source.total,
-        amountInWords: amountInWords(source.total.toNumber()),
-        terms: source.terms,
-        notes: source.notes,
-        items: {
-          create: source.items.map((item) => ({
-            order: item.order,
-            title: item.title,
-            subDescription: item.subDescription,
-            qty: item.qty,
-            rate: item.rate,
-            discountType: item.discountType,
-            discountValue: item.discountValue,
-            amount: item.amount,
-          })),
-        },
-        discounts: {
-          create: source.discounts.map((discount) => ({
-            label: discount.label,
-            type: discount.type,
-            value: discount.value,
-            computedAmount: discount.computedAmount,
-          })),
-        },
-      },
-    });
-
+    const copy = await createDraftCopy(source);
     await audit(req.user?.id, 'Invoice', copy.id, 'CREATE');
     res.status(201).json({ id: copy.id });
+  }),
+);
+
+/**
+ * Starts a replacement for a locked invoice. Everything is carried over, including what has been
+ * paid. The original stays valid until the replacement is finalized.
+ */
+invoicesRouter.post(
+  '/:id/revise',
+  requireRole('ADMIN'),
+  asyncHandler(async (req, res) => {
+    const source = await prisma.invoice.findUnique({
+      where: { id: req.params.id },
+      include: { ...invoiceCopyInclude, revision: { select: { invoiceNo: true } } },
+    });
+    if (!source) throw new HttpError(404, 'Invoice not found');
+    if (source.status === 'DRAFT') throw new HttpError(409, 'Drafts can simply be edited');
+    if (source.status === 'CANCELLED') {
+      throw new HttpError(409, 'A cancelled invoice cannot be revised');
+    }
+    if (source.revision) {
+      throw new HttpError(409, `This invoice already has a revision: ${source.revision.invoiceNo}`);
+    }
+
+    const revisionNote = `Replaces invoice ${source.invoiceNo}.`;
+    const copy = await createDraftCopy(source, {
+      keepPayments: true,
+      notes: [revisionNote, source.notes].filter(Boolean).join('\n'),
+      revisionOfId: source.id,
+    });
+    await audit(req.user?.id, 'Invoice', copy.id, 'CREATE');
+    res.status(201).json({ id: copy.id });
+  }),
+);
+
+invoicesRouter.post(
+  '/:id/finalize',
+  asyncHandler(async (req, res) => {
+    const { id } = req.params;
+    const invoiceNo = await finalizeInvoice(id);
+    await audit(req.user?.id, 'Invoice', id, 'FINALIZE');
+
+    // The invoice is issued even if the PDF fails now. It's made again on the next download.
+    await getInvoicePdf(id).catch((error) => console.error('PDF generation failed', error));
+    res.json({ id, invoiceNo });
+  }),
+);
+
+invoicesRouter.get(
+  '/:id/pdf',
+  asyncHandler(async (req, res) => {
+    const { pdf, filename } = await getInvoicePdf(req.params.id);
+    res.attachment(filename).type('application/pdf').send(pdf);
   }),
 );
 

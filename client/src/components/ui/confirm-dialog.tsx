@@ -7,6 +7,7 @@ interface ConfirmDialogProps {
   title: string;
   description: string;
   confirmLabel: string;
+  tone?: 'destructive' | 'primary';
   pending?: boolean;
   onConfirm: () => void;
 }
@@ -17,6 +18,7 @@ export function ConfirmDialog({
   title,
   description,
   confirmLabel,
+  tone = 'destructive',
   pending,
   onConfirm,
 }: ConfirmDialogProps) {
@@ -26,7 +28,7 @@ export function ConfirmDialog({
         <Button variant="outline" onClick={() => onOpenChange(false)}>
           Cancel
         </Button>
-        <Button variant="destructive" disabled={pending} onClick={onConfirm}>
+        <Button variant={tone} disabled={pending} onClick={onConfirm}>
           {confirmLabel}
         </Button>
       </div>
