@@ -1,5 +1,5 @@
 import { CLIENT_TYPE_LABELS } from '@a2/shared';
-import { FolderKanban, Pencil, Plus, Trash2 } from 'lucide-react';
+import { Download, FolderKanban, Pencil, Plus, Trash2 } from 'lucide-react';
 import { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { toast } from 'sonner';
@@ -12,6 +12,7 @@ import { Card } from '@/components/ui/card';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { EmptyState, ErrorState, ListSkeleton } from '@/components/ui/feedback';
 import { BackLink, PageHeader, SectionCard, StatCard } from '@/components/ui/page';
+import { downloadFile } from '@/lib/api';
 import { useClient, useDeleteClient } from '@/lib/queries';
 
 export function ClientDetailPage() {
@@ -43,6 +44,11 @@ export function ClientDetailPage() {
     ['Notes', c.notes],
   ].filter((entry): entry is [string, string] => Boolean(entry[1]));
 
+  const downloadStatement = () =>
+    downloadFile(`/reports/outstanding?clientId=${c.id}&format=pdf`).catch((error: Error) =>
+      toast.error(error.message),
+    );
+
   const confirmDelete = () =>
     deleteClient.mutate(id, {
       onSuccess: () => {
@@ -70,6 +76,12 @@ export function ClientDetailPage() {
         subtitle={c.alias}
         actions={
           <>
+            {c.outstanding > 0 && (
+              <Button variant="outline" onClick={downloadStatement}>
+                <Download className="h-4 w-4" aria-hidden />
+                Statement
+              </Button>
+            )}
             <Button variant="outline" onClick={() => setEditing(true)}>
               <Pencil className="h-4 w-4" aria-hidden />
               Edit

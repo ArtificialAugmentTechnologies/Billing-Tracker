@@ -5,10 +5,15 @@ type Theme = 'light' | 'dark';
 
 const STORAGE_KEY = 'a2-theme';
 
+const storedTheme = (): Theme => (readStorage(STORAGE_KEY) === 'dark' ? 'dark' : 'light');
+
+/** Runs before the first render, so a dark-mode user never sees a flash of the light theme. */
+export function applyStoredTheme() {
+  document.documentElement.classList.toggle('dark', storedTheme() === 'dark');
+}
+
 export function useTheme() {
-  const [theme, setTheme] = useState<Theme>(() =>
-    readStorage(STORAGE_KEY) === 'dark' ? 'dark' : 'light',
-  );
+  const [theme, setTheme] = useState<Theme>(storedTheme);
 
   useEffect(() => {
     document.documentElement.classList.toggle('dark', theme === 'dark');

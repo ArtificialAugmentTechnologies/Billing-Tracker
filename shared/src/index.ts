@@ -15,4 +15,5 @@ export * from './logo';
 export * from './payments';
 export * from './projects';
 export * from './reports';
+export * from './settings';
 export * from './validation';

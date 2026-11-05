@@ -38,29 +38,38 @@ export function clearSessionCookie(res: Response) {
   res.clearCookie(COOKIE_NAME, cookieOptions);
 }
 
-function readUserId(token: unknown): string | null {
+function readSession(token: unknown) {
   if (typeof token !== 'string') return null;
   try {
     const payload = jwt.verify(token, env.JWT_SECRET, { algorithms: [JWT_ALGORITHM] });
-    return typeof payload === 'object' && payload.sub ? payload.sub : null;
+    if (typeof payload !== 'object' || !payload.sub || !payload.iat) return null;
+    return { userId: payload.sub, issuedAt: payload.iat };
   } catch {
     return null;
   }
 }
 
-/** Loads the user on every request, so role changes and deleted users apply immediately. */
+/**
+ * Loads the user on every request, so role changes and deleted users apply immediately, and a
+ * changed password ends every session signed in before it.
+ */
 export const requireAuth: RequestHandler = asyncHandler(async (req, _res, next) => {
-  const userId = readUserId(req.cookies?.[COOKIE_NAME]);
-  const user = userId
+  const session = readSession(req.cookies?.[COOKIE_NAME]);
+  const user = session
     ? await prisma.user.findUnique({
-        where: { id: userId },
-        select: { id: true, name: true, email: true, role: true },
+        where: { id: session.userId },
+        select: { id: true, name: true, email: true, role: true, passwordChangedAt: true },
       })
     : null;
 
-  if (!user) throw new HttpError(401, 'Please sign in');
+  if (!session || !user) throw new HttpError(401, 'Please sign in');
 
-  req.user = user;
+  const changedAt = user.passwordChangedAt?.getTime();
+  if (changedAt && session.issuedAt < Math.floor(changedAt / 1000)) {
+    throw new HttpError(401, 'Please sign in');
+  }
+
+  req.user = { id: user.id, name: user.name, email: user.email, role: user.role };
   next();
 });
 

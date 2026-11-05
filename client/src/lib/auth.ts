@@ -2,7 +2,7 @@ import type { AuthUser, LoginInput } from '@a2/shared';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api, ApiError } from './api';
 
-const ME_KEY = ['auth', 'me'];
+export const ME_KEY = ['auth', 'me'];
 
 async function fetchCurrentUser(): Promise<AuthUser | null> {
   try {

@@ -42,6 +42,14 @@ export const errorHandler: ErrorRequestHandler = (error, _req, res, _next) => {
     res.status(status).json({ message });
     return;
   }
+  // Malformed or oversized request bodies, reported by Express itself.
+  if (error.status >= 400 && error.status < 500) {
+    const tooLarge = error.status === 413;
+    res
+      .status(error.status)
+      .json({ message: tooLarge ? 'That is too large to send' : 'Invalid request' });
+    return;
+  }
   console.error(error);
   res.status(500).json({ message: 'Something went wrong' });
 };

@@ -1,5 +1,7 @@
 import type {
+  CatalogItemPayload,
   CatalogItemRecord,
+  ChangePasswordInput,
   ClientDetail,
   ClientPayload,
   ClientRecord,
@@ -19,6 +21,7 @@ import type {
   MilestonePayload,
   MilestoneRecord,
   MonthlyRevenueReport,
+  NewUserInput,
   OutstandingReport,
   PaymentMode,
   PaymentPayload,
@@ -27,6 +30,11 @@ import type {
   ProjectPayload,
   ProjectStatus,
   ProjectSummary,
+  Role,
+  SearchResult,
+  SettingsPayload,
+  SettingsRecord,
+  UserRecord,
 } from '@a2/shared';
 import {
   keepPreviousData,
@@ -308,6 +316,115 @@ export function useDeletePayment() {
   return useMutation({
     mutationFn: (id: string) => api<void>(`/payments/${id}`, send('DELETE')),
     onSuccess: () => refreshPayments(queryClient),
+  });
+}
+
+export function useCancelInvoice() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => api<void>(`/invoices/${id}/cancel`, send('POST')),
+    onSuccess: () => refreshInvoices(queryClient),
+  });
+}
+
+export function useSettings(enabled: boolean) {
+  return useQuery({
+    queryKey: ['settings'],
+    queryFn: () => api<SettingsRecord>('/settings'),
+    enabled,
+  });
+}
+
+function refreshSettings(queryClient: QueryClient) {
+  queryClient.invalidateQueries({ queryKey: ['settings'] });
+  queryClient.invalidateQueries({ queryKey: ['invoices'] });
+}
+
+export function useSaveSettings() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (input: SettingsPayload) => api<SettingsRecord>('/settings', send('PUT', input)),
+    onSuccess: () => refreshSettings(queryClient),
+  });
+}
+
+export function useSaveSignature() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (signatureUrl: string | null) =>
+      api<void>('/settings/signature', send('PUT', { signatureUrl })),
+    onSuccess: () => refreshSettings(queryClient),
+  });
+}
+
+export function useSaveCatalogItem(id?: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (input: CatalogItemPayload) =>
+      id
+        ? api<CatalogItemRecord>(`/catalog/${id}`, send('PUT', input))
+        : api<CatalogItemRecord>('/catalog', send('POST', input)),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['catalog'] }),
+  });
+}
+
+export function useDeleteCatalogItem() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => api<void>(`/catalog/${id}`, send('DELETE')),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['catalog'] }),
+  });
+}
+
+export function useUsers(enabled: boolean) {
+  return useQuery({ queryKey: ['users'], queryFn: () => api<UserRecord[]>('/users'), enabled });
+}
+
+export function useCreateUser() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (input: NewUserInput) => api<UserRecord>('/users', send('POST', input)),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['users'] }),
+  });
+}
+
+export function useUpdateUser() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, ...input }: { id: string; name: string; role: Role }) =>
+      api<UserRecord>(`/users/${id}`, send('PUT', input)),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['users'] }),
+  });
+}
+
+export function useResetPassword() {
+  return useMutation({
+    mutationFn: ({ id, password }: { id: string; password: string }) =>
+      api<void>(`/users/${id}/password`, send('POST', { password })),
+  });
+}
+
+export function useDeleteUser() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => api<void>(`/users/${id}`, send('DELETE')),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['users'] }),
+  });
+}
+
+export function useChangePassword() {
+  return useMutation({
+    mutationFn: (input: ChangePasswordInput) => api<void>('/auth/password', send('POST', input)),
+  });
+}
+
+export function useSearch(query: string) {
+  return useQuery({
+    queryKey: ['search', query],
+    queryFn: () => api<SearchResult[]>(`/search${toQueryString({ q: query })}`),
+    enabled: query.length >= 2,
+    placeholderData: keepPreviousData,
+    staleTime: 10_000,
   });
 }
 

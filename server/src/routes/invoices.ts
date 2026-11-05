@@ -312,6 +312,43 @@ invoicesRouter.post(
   }),
 );
 
+/**
+ * Withdraws an issued invoice that won't be paid. One with payments needs a revision instead,
+ * so no money is left attached to a cancelled invoice.
+ */
+invoicesRouter.post(
+  '/:id/cancel',
+  requireRole('ADMIN'),
+  asyncHandler(async (req, res) => {
+    const { id } = req.params;
+    await prisma.$transaction(async (tx) => {
+      await tx.$queryRaw`SELECT id FROM "Invoice" WHERE id = ${id} FOR UPDATE`;
+      const invoice = await tx.invoice.findUnique({
+        where: { id },
+        include: {
+          revision: { select: { status: true } },
+          _count: { select: { payments: true } },
+        },
+      });
+
+      if (!invoice) throw new HttpError(404, 'Invoice not found');
+      if (invoice.status === 'DRAFT') throw new HttpError(409, 'Delete a draft instead');
+      if (invoice.status === 'CANCELLED') throw new HttpError(409, 'Already cancelled');
+      if (invoice._count.payments > 0) {
+        throw new HttpError(409, 'This invoice has payments, so create a revision instead');
+      }
+      if (invoice.revision?.status === 'DRAFT') {
+        throw new HttpError(409, 'This invoice has a revision in progress. Finish or delete it');
+      }
+
+      await tx.invoice.update({ where: { id }, data: { status: 'CANCELLED' } });
+    });
+
+    await audit(req.user?.id, 'Invoice', id, 'UPDATE');
+    res.status(204).end();
+  }),
+);
+
 invoicesRouter.post(
   '/:id/finalize',
   asyncHandler(async (req, res) => {

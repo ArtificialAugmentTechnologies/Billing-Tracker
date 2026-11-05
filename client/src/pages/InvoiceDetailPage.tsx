@@ -1,5 +1,6 @@
 import { invoiceEmailText } from '@a2/shared';
 import {
+  Ban,
   Copy,
   Download,
   FileCheck2,
@@ -24,6 +25,7 @@ import { BackLink, PageHeader } from '@/components/ui/page';
 import { downloadFile } from '@/lib/api';
 import { useCurrentUser } from '@/lib/auth';
 import {
+  useCancelInvoice,
   useDeleteInvoice,
   useDuplicateInvoice,
   useFinalizeInvoice,
@@ -44,8 +46,9 @@ export function InvoiceDetailPage() {
   const deleteInvoice = useDeleteInvoice();
   const finalize = useFinalizeInvoice();
   const revise = useReviseInvoice();
+  const cancel = useCancelInvoice();
   const [fullScreen, setFullScreen] = useState(false);
-  const [dialog, setDialog] = useState<'delete' | 'finalize' | 'revise' | null>(null);
+  const [dialog, setDialog] = useState<'cancel' | 'delete' | 'finalize' | 'revise' | null>(null);
   const [downloading, setDownloading] = useState(false);
 
   if (document.isPending) return <ListSkeleton />;
@@ -109,6 +112,13 @@ export function InvoiceDetailPage() {
       onSettled: () => setDialog(null),
     });
 
+  const confirmCancel = () =>
+    cancel.mutate(id, {
+      onSuccess: () => toast.success('Invoice cancelled'),
+      onError: showError,
+      onSettled: () => setDialog(null),
+    });
+
   const confirmRevise = () =>
     revise.mutate(id, {
       onSuccess: ({ id: revisionId }) => {
@@ -167,6 +177,12 @@ export function InvoiceDetailPage() {
                 Create revision
               </Button>
             )}
+            {canRevise && (
+              <Button variant="outline" onClick={() => setDialog('cancel')}>
+                <Ban className="h-4 w-4" aria-hidden />
+                Cancel invoice
+              </Button>
+            )}
             {isDraft && (
               <Button variant="outline" onClick={() => setDialog('delete')}>
                 <Trash2 className="h-4 w-4" aria-hidden />
@@ -199,6 +215,15 @@ export function InvoiceDetailPage() {
         tone="primary"
         pending={finalize.isPending}
         onConfirm={confirmFinalize}
+      />
+      <ConfirmDialog
+        open={dialog === 'cancel'}
+        onOpenChange={(open) => !open && setDialog(null)}
+        title="Cancel this invoice?"
+        description={`${document.data.invoiceNo} will stop counting towards billing and its number won't be used again. This can't be undone. An invoice with payments needs a revision instead.`}
+        confirmLabel="Cancel invoice"
+        pending={cancel.isPending}
+        onConfirm={confirmCancel}
       />
       <ConfirmDialog
         open={dialog === 'revise'}

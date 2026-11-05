@@ -8,11 +8,12 @@ import { InvoiceBuilderPage } from '@/pages/InvoiceBuilderPage';
 import { InvoiceDetailPage } from '@/pages/InvoiceDetailPage';
 import { InvoicesPage } from '@/pages/InvoicesPage';
 import { LoginPage } from '@/pages/LoginPage';
+import { NotFoundPage } from '@/pages/NotFoundPage';
 import { PaymentsPage } from '@/pages/PaymentsPage';
-import { PlaceholderPage } from '@/pages/PlaceholderPage';
 import { ProjectDetailPage } from '@/pages/ProjectDetailPage';
 import { ProjectsPage } from '@/pages/ProjectsPage';
 import { ReportsPage } from '@/pages/ReportsPage';
+import { SettingsPage } from '@/pages/SettingsPage';
 
 export function App() {
   return (
@@ -32,7 +33,8 @@ export function App() {
             <Route path="projects/:id" element={<ProjectDetailPage />} />
             <Route path="payments" element={<PaymentsPage />} />
             <Route path="reports" element={<ReportsPage />} />
-            <Route path="settings" element={<PlaceholderPage title="Settings" phase={10} />} />
+            <Route path="settings" element={<SettingsPage />} />
+            <Route path="*" element={<NotFoundPage />} />
           </Route>
         </Route>
       </Routes>

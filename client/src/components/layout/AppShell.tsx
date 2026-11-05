@@ -1,7 +1,8 @@
 import { AnimatePresence, motion } from 'framer-motion';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Outlet, useLocation } from 'react-router-dom';
 import { readStorage, writeStorage } from '@/lib/utils';
+import { CommandPalette } from './CommandPalette';
 import { Header } from './Header';
 import { Sidebar } from './Sidebar';
 
@@ -11,6 +12,18 @@ export function AppShell() {
   const { pathname } = useLocation();
   const [collapsed, setCollapsed] = useState(() => readStorage(COLLAPSED_KEY) === 'true');
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [searchOpen, setSearchOpen] = useState(false);
+
+  useEffect(() => {
+    const openOnShortcut = (event: KeyboardEvent) => {
+      if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'k') {
+        event.preventDefault();
+        setSearchOpen(true);
+      }
+    };
+    window.addEventListener('keydown', openOnShortcut);
+    return () => window.removeEventListener('keydown', openOnShortcut);
+  }, []);
 
   const toggleCollapsed = () => {
     const next = !collapsed;
@@ -47,7 +60,8 @@ export function AppShell() {
       </AnimatePresence>
 
       <div className="flex min-w-0 flex-1 flex-col">
-        <Header onOpenMenu={() => setMobileOpen(true)} />
+        <Header onOpenMenu={() => setMobileOpen(true)} onOpenSearch={() => setSearchOpen(true)} />
+        <CommandPalette open={searchOpen} onOpenChange={setSearchOpen} />
         <main className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8">
           <motion.div
             key={pathname}

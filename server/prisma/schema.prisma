@@ -60,13 +60,15 @@ enum PaymentMode {
 }
 
 model User {
-  id           String     @id @default(uuid())
-  name         String
-  email        String     @unique
-  passwordHash String
-  role         Role       @default(STAFF)
-  createdAt    DateTime   @default(now())
-  auditLogs    AuditLog[]
+  id                String     @id @default(uuid())
+  name              String
+  email             String     @unique
+  passwordHash      String
+  role              Role       @default(STAFF)
+  /// Sessions signed in before this are no longer valid.
+  passwordChangedAt DateTime?
+  createdAt         DateTime   @default(now())
+  auditLogs         AuditLog[]
 }
 
 /// Single row, always id 1.
