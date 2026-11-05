@@ -2,6 +2,7 @@ import {
   financialYear,
   invoiceSchema,
   nextInvoiceNumber,
+  paymentSchema,
   type InvoiceBuilderDefaults,
   type InvoiceRecord,
 } from '@a2/shared';
@@ -12,7 +13,7 @@ import { asyncHandler, HttpError } from '../lib/http';
 import { prisma } from '../lib/prisma';
 import { requireRole } from '../middleware/auth';
 import { invoiceRowSelect, toDateString, toInvoiceRow } from '../services/billing';
-import { loadInvoiceDocument } from '../services/invoice-document';
+import { loadInvoiceDocument, toCompanyBlock } from '../services/invoice-document';
 import { getInvoicePdf } from '../services/invoice-pdf';
 import {
   assertLinksMatch,
@@ -23,6 +24,7 @@ import {
   invoiceFormInclude,
   toInvoiceRows,
 } from '../services/invoices';
+import { loadInvoicePayments, recordPayment } from '../services/payments';
 
 async function loadSettings() {
   const settings = await prisma.companySettings.findUnique({ where: { id: 1 } });
@@ -59,20 +61,7 @@ invoicesRouter.get(
   asyncHandler(async (_req, res) => {
     const settings = await loadSettings();
     const defaults: InvoiceBuilderDefaults = {
-      company: {
-        name: settings.name,
-        addressLine: settings.addressLine,
-        phone: settings.phone,
-        email: settings.email,
-        website: settings.website,
-        gstin: settings.gstin,
-        bankAccountName: settings.bankAccountName,
-        bankName: settings.bankName,
-        bankAccountNo: settings.bankAccountNo,
-        bankIfsc: settings.bankIfsc,
-        upiId: settings.upiId,
-        signatureUrl: settings.signatureUrl,
-      },
+      company: toCompanyBlock(settings),
       defaultTerms: settings.defaultTerms,
       defaultPaymentTermDays: settings.defaultPaymentTermDays,
       gstEnabledDefault: settings.gstEnabledDefault,
@@ -273,6 +262,22 @@ invoicesRouter.post(
     // The invoice is issued even if the PDF fails now. It's made again on the next download.
     await getInvoicePdf(id).catch((error) => console.error('PDF generation failed', error));
     res.json({ id, invoiceNo });
+  }),
+);
+
+invoicesRouter.get(
+  '/:id/payments',
+  asyncHandler(async (req, res) => {
+    res.json(await loadInvoicePayments(req.params.id));
+  }),
+);
+
+invoicesRouter.post(
+  '/:id/payments',
+  asyncHandler(async (req, res) => {
+    const payment = await recordPayment(req.params.id, paymentSchema.parse(req.body));
+    await audit(req.user?.id, 'Payment', payment.id, 'CREATE');
+    res.status(201).json({ id: payment.id });
   }),
 );
 

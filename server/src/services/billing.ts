@@ -28,8 +28,18 @@ type InvoiceRowData = Prisma.InvoiceGetPayload<{ select: typeof invoiceRowSelect
 const paidOn = (invoice: InvoiceTotals) =>
   invoice.payments.reduce((sum, payment) => sum.add(payment.amount), new Prisma.Decimal(0));
 
-export function statusAfterPayment(total: Prisma.Decimal, paid: Prisma.Decimal): InvoiceStatus {
+/** Today in India, whatever time zone the server runs in. */
+export const todayInIndia = () =>
+  new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Kolkata' }).format(new Date());
+
+/** An issued invoice's status, from what's been paid and whether its due date has passed. */
+export function statusAfterPayment(
+  total: Prisma.Decimal,
+  paid: Prisma.Decimal,
+  dueDate: Date,
+): InvoiceStatus {
   if (paid.greaterThanOrEqualTo(total)) return 'PAID';
+  if (toDateString(dueDate) < todayInIndia()) return 'OVERDUE';
   return paid.greaterThan(0) ? 'PARTIALLY_PAID' : 'SENT';
 }
 

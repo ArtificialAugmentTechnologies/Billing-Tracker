@@ -4,7 +4,7 @@ import type { InvoiceDocument } from './document';
 import { INVOICE_CSS, INVOICE_FONTS_URL } from './styles';
 
 /** Everything printed from a record goes through this, as the text comes from users. */
-function esc(value: string | number | null | undefined) {
+export function esc(value: string | number | null | undefined) {
   return String(value ?? '')
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
@@ -19,29 +19,34 @@ const twoDigits = (index: number) => String(index + 1).padStart(2, '0');
 
 const formatQty = (qty: number) => qty.toLocaleString('en-IN', { maximumFractionDigits: 2 });
 
-const row = (label: string, value: string) => `<div><dt>${label}</dt><dd>${value}</dd></div>`;
+export const row = (label: string, value: string) =>
+  `<div><dt>${label}</dt><dd>${value}</dd></div>`;
 
 const percentLabel = (rate: number) => `${rate.toLocaleString('en-IN')}%`;
 
+/** The logo and company details, shared by invoices and receipts. */
+export function renderBrand(company: InvoiceDocument['company']) {
+  return `
+    <div class="brand">
+      <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">${logoMarkShapes('reversed')}</svg>
+      <div>
+        <div class="wordmark"><b>A</b><sup>2</sup> Technologies</div>
+        <div class="tagline">Artificial Augment</div>
+      </div>
+    </div>
+    <div class="company">
+      <div><strong>${esc(company.name)}</strong> · ${esc(company.addressLine)}</div>
+      <div>${esc(company.phone)} · ${esc(company.email)}</div>
+      <div>${esc(company.website)}</div>
+      ${company.gstin ? `<div>GSTIN: ${esc(company.gstin)}</div>` : ''}
+    </div>
+  `;
+}
+
 function renderHeader(doc: InvoiceDocument) {
-  const { company } = doc;
   return `
     <header class="header">
-      <div>
-        <div class="brand">
-          <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">${logoMarkShapes('reversed')}</svg>
-          <div>
-            <div class="wordmark"><b>A</b><sup>2</sup> Technologies</div>
-            <div class="tagline">Artificial Augment</div>
-          </div>
-        </div>
-        <div class="company">
-          <div><strong>${esc(company.name)}</strong> · ${esc(company.addressLine)}</div>
-          <div>${esc(company.phone)} · ${esc(company.email)}</div>
-          <div>${esc(company.website)}</div>
-          ${company.gstin ? `<div>GSTIN: ${esc(company.gstin)}</div>` : ''}
-        </div>
-      </div>
+      <div>${renderBrand(doc.company)}</div>
       <div class="title">
         <p class="label">${doc.gstEnabled ? 'Tax invoice' : 'Tax not applicable'}</p>
         <h1>INVOICE</h1>
@@ -51,18 +56,23 @@ function renderHeader(doc: InvoiceDocument) {
   `;
 }
 
-function renderParties(doc: InvoiceDocument) {
-  const { client, project } = doc;
+/** A client's address and contact lines, without blanks. */
+export function billedToLines(client: InvoiceDocument['client']) {
   const cityLine = [[client.city, client.state].filter(Boolean).join(', '), client.pin]
     .filter(Boolean)
     .join(' – ');
-  const lines = [
+  return [
     client.addressLine1,
     client.addressLine2,
     cityLine,
     [client.contactPerson, client.phone, client.email].filter(Boolean).join(' · '),
     client.gstin && `GSTIN: ${client.gstin}`,
   ].filter(Boolean);
+}
+
+function renderParties(doc: InvoiceDocument) {
+  const { client, project } = doc;
+  const lines = billedToLines(client);
 
   return `
     <section class="parties">
@@ -195,11 +205,6 @@ function renderFooter(doc: InvoiceDocument) {
     ] as const
   ).filter(([, value]) => value);
 
-  const signature =
-    company.signatureUrl && isSafeImageUrl(company.signatureUrl)
-      ? `<img src="${esc(company.signatureUrl)}" alt="" />`
-      : '';
-
   return `
     <section class="footer">
       <div>
@@ -213,12 +218,23 @@ function renderFooter(doc: InvoiceDocument) {
       <div>
         ${doc.terms ? `<p class="label">Terms</p><p class="terms">${esc(doc.terms)}</p>` : ''}
       </div>
-      <div class="sign">
-        <p class="label">For A² Technologies</p>
-        <div class="sign-space">${signature}</div>
-        <p class="sign-line">Authorised Signatory</p>
-      </div>
+      ${renderSignature(company)}
     </section>
+  `;
+}
+
+export function renderSignature(company: InvoiceDocument['company']) {
+  const signature =
+    company.signatureUrl && isSafeImageUrl(company.signatureUrl)
+      ? `<img src="${esc(company.signatureUrl)}" alt="" />`
+      : '';
+
+  return `
+    <div class="sign">
+      <p class="label">For A² Technologies</p>
+      <div class="sign-space">${signature}</div>
+      <p class="sign-line">Authorised Signatory</p>
+    </div>
   `;
 }
 

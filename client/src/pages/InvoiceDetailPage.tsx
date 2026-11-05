@@ -16,6 +16,7 @@ import { toast } from 'sonner';
 import { FullScreenPreview } from '@/components/invoices/FullScreenPreview';
 import { InvoicePreview, printInvoicePreview } from '@/components/invoices/InvoicePreview';
 import { InvoiceStatusBadge } from '@/components/invoices/InvoiceTable';
+import { InvoicePaymentsCard } from '@/components/payments/InvoicePaymentsCard';
 import { Button } from '@/components/ui/button';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { ErrorState, ListSkeleton } from '@/components/ui/feedback';
@@ -182,6 +183,7 @@ export function InvoiceDetailPage() {
             <InvoiceStatusBadge status={status} />
           </div>
         )}
+        {status && !isDraft && <InvoicePaymentsCard invoiceId={id} />}
         <InvoicePreview document={document.data} />
       </div>
 

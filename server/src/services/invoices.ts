@@ -3,17 +3,13 @@ import { Prisma } from '@prisma/client';
 import { randomUUID } from 'node:crypto';
 import { HttpError } from '../lib/http';
 import { prisma } from '../lib/prisma';
-import { statusAfterPayment, toDateString } from './billing';
+import { statusAfterPayment, toDateString, todayInIndia } from './billing';
 import { allocateInvoiceNo } from './invoice-number';
 
 const { Decimal } = Prisma;
 
 /** Drafts hold a temporary label, so a deleted draft never leaves a gap in the real numbers. */
 export const draftInvoiceNo = () => `DRAFT-${randomUUID().slice(0, 8).toUpperCase()}`;
-
-/** Today in India, whatever time zone the server runs in. */
-export const todayInIndia = () =>
-  new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Kolkata' }).format(new Date());
 
 export async function assertLinksMatch(input: InvoicePayload) {
   const client = await prisma.client.findUnique({ where: { id: input.clientId } });
@@ -188,7 +184,7 @@ export function finalizeInvoice(id: string) {
         where: { id, status: 'DRAFT' },
         data: {
           invoiceNo,
-          status: statusAfterPayment(invoice.total, paid),
+          status: statusAfterPayment(invoice.total, paid, invoice.dueDate),
           finalizedAt: new Date(),
         },
       });

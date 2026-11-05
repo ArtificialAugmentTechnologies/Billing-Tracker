@@ -9,8 +9,12 @@ import type {
   InvoiceBuilderDefaults,
   InvoiceDocument,
   InvoicePayload,
+  InvoicePayments,
   InvoiceRecord,
   InvoiceRow,
+  PaymentMode,
+  PaymentPayload,
+  PaymentRow,
   MilestonePayload,
   MilestoneRecord,
   ProjectDetail,
@@ -213,6 +217,49 @@ export function useReviseInvoice() {
   return useMutation({
     mutationFn: (id: string) => api<{ id: string }>(`/invoices/${id}/revise`, send('POST')),
     onSuccess: () => refreshInvoices(queryClient),
+  });
+}
+
+export function useInvoicePayments(id: string, enabled = true) {
+  return useQuery({
+    queryKey: ['invoices', 'payments', id],
+    queryFn: () => api<InvoicePayments>(`/invoices/${id}/payments`),
+    enabled,
+  });
+}
+
+export interface PaymentFilters {
+  search?: string;
+  mode?: PaymentMode;
+}
+
+export function usePayments(filters: PaymentFilters = {}) {
+  return useQuery({
+    queryKey: ['payments', filters],
+    queryFn: () => api<PaymentRow[]>(`/payments${toQueryString({ ...filters })}`),
+    placeholderData: keepPreviousData,
+  });
+}
+
+function refreshPayments(queryClient: QueryClient) {
+  queryClient.invalidateQueries({ queryKey: ['payments'] });
+  refreshInvoices(queryClient);
+}
+
+export function useRecordPayment() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ invoiceId, input }: { invoiceId: string; input: PaymentPayload }) =>
+      api<{ id: string }>(`/invoices/${invoiceId}/payments`, send('POST', input)),
+    onSuccess: () => refreshPayments(queryClient),
+  });
+}
+
+export function useDeletePayment() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => api<void>(`/payments/${id}`, send('DELETE')),
+    onSuccess: () => refreshPayments(queryClient),
   });
 }
 

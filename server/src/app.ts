@@ -9,7 +9,9 @@ import { authRouter } from './routes/auth';
 import { catalogRouter } from './routes/catalog';
 import { clientsRouter } from './routes/clients';
 import { invoicesRouter } from './routes/invoices';
+import { paymentsRouter } from './routes/payments';
 import { milestonesRouter, projectsRouter } from './routes/projects';
+import { refreshOverdue } from './services/payments';
 
 export const app = express();
 
@@ -23,10 +25,11 @@ app.get('/api/health', (_req, res) => {
 });
 
 app.use('/api/auth', authRouter);
-app.use('/api/clients', requireAuth, clientsRouter);
-app.use('/api/projects', requireAuth, projectsRouter);
+app.use('/api/clients', requireAuth, refreshOverdue, clientsRouter);
+app.use('/api/projects', requireAuth, refreshOverdue, projectsRouter);
 app.use('/api/milestones', requireAuth, milestonesRouter);
-app.use('/api/invoices', requireAuth, invoicesRouter);
+app.use('/api/invoices', requireAuth, refreshOverdue, invoicesRouter);
+app.use('/api/payments', requireAuth, refreshOverdue, paymentsRouter);
 app.use('/api/catalog', requireAuth, catalogRouter);
 
 app.use(errorHandler);

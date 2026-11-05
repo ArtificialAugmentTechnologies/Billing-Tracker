@@ -1,7 +1,37 @@
 import { calculateInvoice, type InvoiceDocument } from '@a2/shared';
+import type { Client, CompanySettings } from '@prisma/client';
 import { HttpError } from '../lib/http';
 import { prisma } from '../lib/prisma';
 import { toDateString } from './billing';
+
+export const toCompanyBlock = (company: CompanySettings): InvoiceDocument['company'] => ({
+  name: company.name,
+  addressLine: company.addressLine,
+  phone: company.phone,
+  email: company.email,
+  website: company.website,
+  gstin: company.gstin,
+  bankAccountName: company.bankAccountName,
+  bankName: company.bankName,
+  bankAccountNo: company.bankAccountNo,
+  bankIfsc: company.bankIfsc,
+  upiId: company.upiId,
+  signatureUrl: company.signatureUrl,
+});
+
+export const toClientBlock = (client: Client): InvoiceDocument['client'] => ({
+  name: client.name,
+  alias: client.alias,
+  addressLine1: client.addressLine1,
+  addressLine2: client.addressLine2,
+  city: client.city,
+  state: client.state,
+  pin: client.pin,
+  contactPerson: client.contactPerson,
+  phone: client.phone,
+  email: client.email,
+  gstin: client.gstin,
+});
 
 /** Loads an invoice as the template needs it. Totals come from the shared calculation. */
 export async function loadInvoiceDocument(id: string): Promise<InvoiceDocument> {
@@ -42,33 +72,8 @@ export async function loadInvoiceDocument(id: string): Promise<InvoiceDocument> 
   const gstRate = invoice.gstRate?.toNumber() ?? null;
 
   return {
-    company: {
-      name: company.name,
-      addressLine: company.addressLine,
-      phone: company.phone,
-      email: company.email,
-      website: company.website,
-      gstin: company.gstin,
-      bankAccountName: company.bankAccountName,
-      bankName: company.bankName,
-      bankAccountNo: company.bankAccountNo,
-      bankIfsc: company.bankIfsc,
-      upiId: company.upiId,
-      signatureUrl: company.signatureUrl,
-    },
-    client: {
-      name: invoice.client.name,
-      alias: invoice.client.alias,
-      addressLine1: invoice.client.addressLine1,
-      addressLine2: invoice.client.addressLine2,
-      city: invoice.client.city,
-      state: invoice.client.state,
-      pin: invoice.client.pin,
-      contactPerson: invoice.client.contactPerson,
-      phone: invoice.client.phone,
-      email: invoice.client.email,
-      gstin: invoice.client.gstin,
-    },
+    company: toCompanyBlock(company),
+    client: toClientBlock(invoice.client),
     project: invoice.project && {
       name: invoice.project.name,
       refCode: invoice.project.refCode,

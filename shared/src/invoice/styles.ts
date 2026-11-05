@@ -183,6 +183,17 @@ td.num { color: ${greyOnLight}; }
 .totals .balance dt { color: ${orange}; }
 .totals .balance dd { font-weight: 700; }
 
+/* Receipt amount */
+.receipt-amount { padding: 5mm; border-left: 1.2mm solid ${orange}; background: ${cream}; }
+.receipt-figure {
+  margin-top: 2mm;
+  font-family: 'Bricolage Grotesque', sans-serif;
+  font-size: 30pt;
+  font-weight: 800;
+  line-height: 1.1;
+}
+.receipt-amount .words { margin-top: 1mm; padding: 0; background: none; }
+
 /* Footer columns and the closing bar stay together, at the bottom of the last page */
 .closing { margin-top: auto; break-inside: avoid; }
 .footer {
