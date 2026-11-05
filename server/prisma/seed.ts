@@ -1,3 +1,4 @@
+import { calculateInvoice, DEFAULT_GST_RATE } from '@a2/shared';
 import bcrypt from 'bcryptjs';
 import {
   ClientType,
@@ -145,6 +146,22 @@ async function seedSampleInvoice() {
     },
   });
 
+  const items = CATALOG.slice(0, 4).map((item, index) => ({
+    order: index + 1,
+    title: item.title,
+    subDescription: item.subDescription,
+    qty: 1,
+    rate: item.defaultRate,
+  }));
+  const discounts = [{ label: 'Partner discount', type: DiscountType.FLAT, value: 2000 }];
+  const advance = 10000;
+  const totals = calculateInvoice({
+    items,
+    discounts,
+    tax: { enabled: false, rate: DEFAULT_GST_RATE },
+    advances: [advance],
+  });
+
   await prisma.invoice.upsert({
     where: { invoiceNo: SAMPLE_INVOICE_NO },
     update: {},
@@ -159,37 +176,23 @@ async function seedSampleInvoice() {
       paymentTermDays: 10,
       status: InvoiceStatus.PARTIALLY_PAID,
       gstEnabled: false,
-      subtotal: 28000,
-      discountTotal: 2000,
-      taxTotal: 0,
-      total: 26000,
-      advanceTotal: 10000,
-      balanceDue: 16000,
-      amountInWords: 'Rupees Sixteen Thousand Only',
+      subtotal: totals.subtotal,
+      discountTotal: totals.discountTotal,
+      taxTotal: totals.taxTotal,
+      total: totals.total,
+      advanceTotal: totals.advanceTotal,
+      balanceDue: totals.balanceDue,
+      amountInWords: totals.amountInWords,
       terms: SAMPLE_TERMS,
       finalizedAt: new Date('2026-10-27'),
       items: {
-        create: CATALOG.slice(0, 4).map((item, index) => ({
-          order: index + 1,
-          title: item.title,
-          subDescription: item.subDescription,
-          qty: 1,
-          rate: item.defaultRate,
-          amount: item.defaultRate,
-        })),
+        create: items.map((item, index) => ({ ...item, amount: totals.items[index].amount })),
       },
-      discounts: {
-        create: {
-          label: 'Partner discount',
-          type: DiscountType.FLAT,
-          value: 2000,
-          computedAmount: 2000,
-        },
-      },
+      discounts: { create: totals.discounts },
       payments: {
         create: {
           date: new Date('2026-10-27'),
-          amount: 10000,
+          amount: advance,
           mode: PaymentMode.BANK_TRANSFER,
           notes: 'Advance received',
           isAdvance: true,

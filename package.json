@@ -13,6 +13,7 @@
     "dev": "concurrently -n server,client -c \"#FF5F2E,#C9C6D8\" \"npm run dev -w server\" \"npm run dev -w client\"",
     "build": "npm run build -w client",
     "typecheck": "npm run typecheck -w shared && npm run typecheck -w client && npm run typecheck -w server",
+    "test": "npm test -w shared",
     "lint": "eslint .",
     "format": "prettier --write ."
   },

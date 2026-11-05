@@ -7,12 +7,20 @@ const longDate = new Intl.DateTimeFormat('en-GB', {
   timeZone: 'UTC',
 });
 
-/** Indian grouping with two decimals, e.g. ₹ 1,25,000.00 */
+/** Indian grouping with two decimals, e.g. ₹ 1,25,000.00, or − ₹ 2,000.00 when negative. */
 export function formatINR(amount: number) {
-  return `₹ ${inr.format(amount)}`;
+  const formatted = `₹ ${inr.format(Math.abs(amount))}`;
+  return Math.round(amount * 100) < 0 ? `− ${formatted}` : formatted;
 }
 
 /** Formats a YYYY-MM-DD date as "27 Oct 2026". */
 export function formatDate(date: string) {
   return longDate.format(new Date(date));
+}
+
+/** Adds days to a YYYY-MM-DD date, e.g. for working out a due date. */
+export function addDays(date: string, days: number) {
+  const result = new Date(date);
+  result.setUTCDate(result.getUTCDate() + days);
+  return result.toISOString().slice(0, 10);
 }

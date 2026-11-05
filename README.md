@@ -36,6 +36,7 @@ After 10 failed sign-ins from one address, sign-in is blocked for 15 minutes. Re
 
 | Command             | Purpose                       |
 | ------------------- | ----------------------------- |
+| `npm test`          | Run the unit tests            |
 | `npm run typecheck` | Type-check every workspace    |
 | `npm run lint`      | Run ESLint                    |
 | `npm run format`    | Format the code with Prettier |
