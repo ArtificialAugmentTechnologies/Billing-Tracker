@@ -28,6 +28,8 @@
   }
 
   .dark {
+    /* Lets the browser draw date-picker icons and dropdown menus for a dark background. */
+    color-scheme: dark;
     --background: var(--navy);
     --foreground: var(--cream);
     --card: 37 35 69;

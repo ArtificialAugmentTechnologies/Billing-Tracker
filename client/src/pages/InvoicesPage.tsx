@@ -38,14 +38,14 @@ const NO_FILTERS: Filters = { search: '', status: '', clientId: '', fy: '', from
 
 const COLUMNS: { key: InvoiceSort; label: string; align?: 'right'; className?: string }[] = [
   { key: 'invoiceNo', label: 'Invoice no.' },
-  { key: 'clientName', label: 'Client' },
+  { key: 'clientName', label: 'Client', className: 'hidden sm:table-cell' },
   { key: 'projectName', label: 'Project', className: 'hidden 2xl:table-cell' },
-  { key: 'invoiceDate', label: 'Date', className: 'hidden md:table-cell' },
-  { key: 'dueDate', label: 'Due', className: 'hidden lg:table-cell' },
-  { key: 'total', label: 'Total', align: 'right', className: 'hidden sm:table-cell' },
-  { key: 'paid', label: 'Paid', align: 'right', className: 'hidden xl:table-cell' },
+  { key: 'invoiceDate', label: 'Date', className: 'hidden xl:table-cell' },
+  { key: 'dueDate', label: 'Due', className: 'hidden xl:table-cell' },
+  { key: 'total', label: 'Total', align: 'right', className: 'hidden md:table-cell' },
+  { key: 'paid', label: 'Paid', align: 'right', className: 'hidden min-[1400px]:table-cell' },
   { key: 'balance', label: 'Balance', align: 'right' },
-  { key: 'status', label: 'Status' },
+  { key: 'status', label: 'Status', className: 'hidden sm:table-cell' },
 ];
 
 export function InvoicesPage() {
@@ -108,8 +108,8 @@ export function InvoicesPage() {
         }
       />
 
-      <div className="mb-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
-        <div className="relative sm:col-span-2 lg:col-span-3 xl:col-span-2">
+      <div className="mb-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-[minmax(0,1.7fr)_repeat(3,minmax(0,1fr))_repeat(2,minmax(0,1.15fr))]">
+        <div className="relative sm:col-span-2 lg:col-span-3 xl:col-span-1">
           <Search
             className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground"
             aria-hidden
@@ -118,7 +118,8 @@ export function InvoicesPage() {
             type="search"
             value={filters.search}
             onChange={(event) => update({ search: event.target.value })}
-            placeholder="Search invoice, client or project"
+            placeholder="Search invoices"
+            title="Search by invoice number, client or project"
             aria-label="Search invoices"
             className="pl-9"
           />
@@ -159,20 +160,20 @@ export function InvoicesPage() {
             </option>
           ))}
         </Select>
-        <div className="grid grid-cols-2 gap-3 max-xl:sm:col-span-2 lg:col-span-1 xl:col-span-1 xl:grid-cols-1">
-          <Input
-            type="date"
-            value={filters.from}
-            onChange={(event) => update({ from: event.target.value })}
-            aria-label="From date"
-          />
-          <Input
-            type="date"
-            value={filters.to}
-            onChange={(event) => update({ to: event.target.value })}
-            aria-label="To date"
-          />
-        </div>
+        <Input
+          type="date"
+          value={filters.from}
+          onChange={(event) => update({ from: event.target.value })}
+          aria-label="From date"
+          title="From date"
+        />
+        <Input
+          type="date"
+          value={filters.to}
+          onChange={(event) => update({ to: event.target.value })}
+          aria-label="To date"
+          title="To date"
+        />
       </div>
 
       {invoices.isPending ? (
@@ -237,28 +238,36 @@ export function InvoicesPage() {
             <tbody>
               {invoices.data.rows.map((invoice) => (
                 <tr key={invoice.id} className="hover:bg-muted/40">
-                  <td className={`${tdClass} whitespace-nowrap font-medium`}>
-                    <Link to={`/invoices/${invoice.id}`} className="hover:text-orange">
+                  <td className={`${tdClass} font-medium`}>
+                    <Link
+                      to={`/invoices/${invoice.id}`}
+                      className="whitespace-nowrap hover:text-orange"
+                    >
                       {invoice.invoiceNo}
                     </Link>
+                    {/* On phones these sit here, as their own columns are hidden. */}
+                    <div className="mt-1 space-y-1 font-normal sm:hidden">
+                      <p className="text-xs text-muted-foreground">{invoice.clientName}</p>
+                      <InvoiceStatusBadge status={invoice.status} />
+                    </div>
                   </td>
-                  <td className={tdClass}>{invoice.clientName}</td>
+                  <td className={`${tdClass} hidden sm:table-cell`}>{invoice.clientName}</td>
                   <td className={`${tdClass} hidden 2xl:table-cell`}>
                     {invoice.projectName ?? '—'}
                   </td>
-                  <td className={`${tdClass} hidden whitespace-nowrap md:table-cell`}>
+                  <td className={`${tdClass} hidden whitespace-nowrap xl:table-cell`}>
                     {formatDate(invoice.invoiceDate)}
                   </td>
-                  <td className={`${tdClass} hidden whitespace-nowrap lg:table-cell`}>
+                  <td className={`${tdClass} hidden whitespace-nowrap xl:table-cell`}>
                     {formatDate(invoice.dueDate)}
                   </td>
                   <td
-                    className={`${tdClass} hidden whitespace-nowrap text-right tabular-nums sm:table-cell`}
+                    className={`${tdClass} hidden whitespace-nowrap text-right tabular-nums md:table-cell`}
                   >
                     {formatINR(invoice.total)}
                   </td>
                   <td
-                    className={`${tdClass} hidden whitespace-nowrap text-right tabular-nums xl:table-cell`}
+                    className={`${tdClass} hidden whitespace-nowrap text-right tabular-nums min-[1400px]:table-cell`}
                   >
                     {formatINR(invoice.paid)}
                   </td>
@@ -267,7 +276,7 @@ export function InvoicesPage() {
                   >
                     {formatINR(invoice.balance)}
                   </td>
-                  <td className={tdClass}>
+                  <td className={`${tdClass} hidden sm:table-cell`}>
                     <InvoiceStatusBadge status={invoice.status} />
                   </td>
                 </tr>
