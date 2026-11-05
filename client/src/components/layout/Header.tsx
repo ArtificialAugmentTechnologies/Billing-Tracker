@@ -1,12 +1,15 @@
-import { Menu, Moon, Sun } from 'lucide-react';
+import { LogOut, Menu, Moon, Sun } from 'lucide-react';
 import { useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
+import { useCurrentUser, useLogout } from '@/lib/auth';
 import { useTheme } from '@/lib/theme';
 import { NAV_ITEMS } from './nav';
 
 export function Header({ onOpenMenu }: { onOpenMenu: () => void }) {
   const { pathname } = useLocation();
   const { theme, toggleTheme } = useTheme();
+  const { data: user } = useCurrentUser();
+  const logout = useLogout();
 
   const current = NAV_ITEMS.find((item) =>
     item.to === '/' ? pathname === '/' : pathname.startsWith(item.to),
@@ -26,7 +29,10 @@ export function Header({ onOpenMenu }: { onOpenMenu: () => void }) {
 
       <p className="font-heading text-lg font-semibold">{current?.label ?? 'Billing Tracker'}</p>
 
-      <div className="ml-auto">
+      <div className="ml-auto flex items-center gap-1">
+        {user && (
+          <span className="mr-2 hidden text-sm text-muted-foreground sm:inline">{user.name}</span>
+        )}
         <Button
           variant="ghost"
           size="icon"
@@ -38,6 +44,15 @@ export function Header({ onOpenMenu }: { onOpenMenu: () => void }) {
           ) : (
             <Moon className="h-5 w-5" aria-hidden />
           )}
+        </Button>
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => logout.mutate()}
+          disabled={logout.isPending}
+          aria-label="Sign out"
+        >
+          <LogOut className="h-5 w-5" aria-hidden />
         </Button>
       </div>
     </header>
